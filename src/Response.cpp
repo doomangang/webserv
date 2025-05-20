@@ -1,4 +1,4 @@
-#include "Response.hpp"
+#include "../inc/Response.hpp"
 
 Response::Response() {
     std::cout << GREEN << "Response default constructor called\n" << RESET << std::endl;

@@ -23,6 +23,13 @@
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
 
+class ServerManager;
+class Config;
+class Location;
+class Connection;
+class Response;
+class Request;
+
 class Server {
 private:
 	/* member attributes */
@@ -39,10 +46,10 @@ private:
 	std::vector<Location>       _locations;
 	std::map<int, Connection>   _connections;
 	std::queue<Response>        _responses;
+	Server();
 
 public:
 	/* Orthodox Canonical Form (OCF) */
-	Server();
 	Server(ServerManager*, std::string& server_block, std::string& location_blocks, Config*);
 	Server(const Server& other);
 	~Server();

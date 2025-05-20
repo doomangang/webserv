@@ -18,6 +18,9 @@
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
 
+class Config;
+class Server;
+
 class ServerManager {
 public:
     enum SetType { WRITE_SET, WRITE_COPY_SET,
@@ -36,9 +39,10 @@ private:
                         _error_set,
                         _error_copy_set;
 
+    ServerManager();
+
 public:
     /* Orthodox Canonical Form (OCF) */
-    ServerManager();
     ServerManager(const Config&);
     ServerManager(const ServerManager& other);
     ~ServerManager();

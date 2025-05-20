@@ -1,22 +1,12 @@
-#include "Config.hpp"
+#include "../inc/Config.hpp"
 
-Config::Config() {
-    std::cout << GREEN << "Config default constructor called\n" << RESET << std::endl;
-}
+Config::Config() {}
 
-Config::Config(std::string& config_block, char* envp[]) {
+Config::Config(std::string& config_block, char* envp[]) : _base_env(envp){ (void)config_block; }
 
-}
+Config::Config(const Config& other) :_base_env(other._base_env){}
 
-
-Config::Config(const Config& other) {
-    *this = other;
-    std::cout << GREEN << "Config copy constructor called\n" << RESET << std::endl;
-}
-
-Config::~Config() {
-    std::cout << RED << "Config destructor called\n" << RESET << std::endl;
-}
+Config::~Config() {}
 
 Config& Config::operator=(const Config& other) {
     std::cout << YELLOW << "Config assignment operator called\n" << RESET << std::endl;

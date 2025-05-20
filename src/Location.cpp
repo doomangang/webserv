@@ -1,4 +1,4 @@
-#include "Location.hpp"
+#include "../inc/Location.hpp"
 
 Location::Location() {
     std::cout << GREEN << "Location default constructor called\n" << RESET << std::endl;

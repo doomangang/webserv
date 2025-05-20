@@ -23,9 +23,10 @@ private:
     std::string _http_version;
     std::string _cgi_version;
     char**      _base_env;
+    Config();
+    
 public:
     /* Orthodox Canonical Form (OCF) */
-    Config();
     Config(std::string& config_block, char* envp[]);
     Config(const Config& other);
     ~Config();

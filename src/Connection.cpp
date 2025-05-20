@@ -1,4 +1,4 @@
-#include "Connection.hpp"
+#include "../inc/Connection.hpp"
 
 Connection::Connection() {
     std::cout << GREEN << "Connection default constructor called\n" << RESET << std::endl;

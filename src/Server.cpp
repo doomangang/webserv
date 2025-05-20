@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 Server::Server() {
     std::cout << GREEN << "Server default constructor called\n" << RESET << std::endl;

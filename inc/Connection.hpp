@@ -22,10 +22,10 @@ private:
     timeval     _last_request_at;
     std::string _client_ip;
     int         _client_port;
+    Connection();
 
 public:
     /* Orthodox Canonical Form (OCF) */
-    Connection();
     Connection(int client_fd, std::string& client_ip, int client_port);
     Connection(const Connection& other);
     ~Connection();

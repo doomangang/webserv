@@ -28,9 +28,10 @@ private:
 	std::set<std::string>               _index;
 	std::set<std::string>               _cgi;
 	bool                                _autoindex;
+	Location();
+
 public:
 	/* Orthodox Canonical Form (OCF) */
-	Location();
 	Location(std::string& location_block);
 	Location(const Location& other);
 	~Location();

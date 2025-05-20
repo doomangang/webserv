@@ -1,26 +1,36 @@
-#include "ServerManager.hpp"
+#include "../inc/ServerManager.hpp"
 
-ServerManager::ServerManager() {
-    std::cout << GREEN << "ServerManager default constructor called\n" << RESET << std::endl;
-}
+//OCF
 
-ServerManager::ServerManager(const Config&) {
-    
-}
+ServerManager::ServerManager() {}
 
-ServerManager::ServerManager(const ServerManager& other) {
-    *this = other;
-    std::cout << GREEN << "ServerManager copy constructor called\n" << RESET << std::endl;
-}
+ServerManager::ServerManager(const Config& config) : _config(config){}
 
-ServerManager::~ServerManager() {
-    std::cout << RED << "ServerManager destructor called\n" << RESET << std::endl;
-}
+ServerManager::ServerManager(const ServerManager& other) : _config(other._config){}
+
+ServerManager::~ServerManager() {}
 
 ServerManager& ServerManager::operator=(const ServerManager& other) {
-    std::cout << YELLOW << "ServerManager assignment operator called\n" << RESET << std::endl;
     if (this != &other) {
-        // assignment code here
+        _config = other._config;
     }
     return *this;
+}
+
+// methods
+
+bool ServerManager::splitConfigString(const std::string& raw, 
+                                        std::string& outConfig, 
+                                        std::vector<std::string>& outServers) 
+{
+    // TODO: implement
+    return false;
+}
+
+bool ServerManager::splitServerString(const std::string& rawServer, 
+                                        std::string& outServerBlock, 
+                                        std::vector<std::string>& outLocationBlocks) 
+{
+    // TODO: implement
+    return false;
 }

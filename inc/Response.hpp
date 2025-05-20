@@ -5,7 +5,6 @@
 #include <map>
 #include <vector>
 #include "Connection.hpp"
-#include "Response.hpp"
 
 
 /* Color Sets */
@@ -20,6 +19,8 @@
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
 
+class Connection;
+
 class Response {
 public:
     enum TransferType { GENERAL, CHUNKED };
@@ -32,10 +33,10 @@ private:
     std::map<std::string, std::string> _headers;
     TransferType    _transfer_type;
     std::string     _content;
-    
+    Response();
+
 public:
     /* Orthodox Canonical Form (OCF) */
-    Response();
     Response(Connection*, int status_code, const std::string& body = "");
     Response(const Response& other);
     ~Response();

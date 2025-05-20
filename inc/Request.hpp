@@ -19,6 +19,10 @@
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
 
+class Connection;
+class Server;
+class Location;
+
 class Request {
 public:
     enum Method { GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE };
@@ -37,10 +41,10 @@ private:
     TransferType                        _transfer_type;
     std::string                         _content;
     std::string                         _origin;
+    Request();
 
 public:
     /* Orthodox Canonical Form (OCF) */
-    Request();
     Request(Connection*, Server*, std::string& start_line);
     Request(const Request& other);
     ~Request();
