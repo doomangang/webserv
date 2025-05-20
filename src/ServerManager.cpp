@@ -34,3 +34,14 @@ bool ServerManager::splitServerString(const std::string& rawServer,
     // TODO: implement
     return false;
 }
+
+
+/*예를 들어 splitConfigString 은:
+
+전체 문자열에서 "server" 키워드로 블록 시작점 찾기
+
+중괄호 {} 레벨 카운터로 블록 끝까지 자르기
+
+그 사이 문자열을 servers.push_back(...)
+
+남은 부분은 outConfig = ...*/
