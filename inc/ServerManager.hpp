@@ -55,16 +55,16 @@ public:
     void    setMaxFd(int);
 
     /* additional methods */
-    bool    splitConfigString(const std::string& src,
-                                std::string& config_block,
-                                std::vector<std::string>& server_strings);
-    bool    splitServerString(const std::string& src,
-                                std::string& server_block, 
-                                std::vector<std::string>& location_blocks);
+    // bool    splitConfigString(const std::string& src,
+    //                             std::string& config_block,
+    //                             std::vector<std::string>& server_strings);
+    // bool    splitServerString(const std::string& src,
+    //                             std::string& server_block, 
+    //                             std::vector<std::string>& location_blocks);
 
-    bool    isValidConfigBlock(const std::string&);
-    bool    isValidServerBlock(const std::string&);
-    bool    isValidLocationBlock(const std::string&);
+    // bool    isValidConfigBlock(const std::string&);
+    // bool    isValidServerBlock(const std::string&);
+    // bool    isValidLocationBlock(const std::string&);
 
     void    createServer();
     void    runServer();
