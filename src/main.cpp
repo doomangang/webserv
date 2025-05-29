@@ -5,13 +5,15 @@ int main(int argc, char **argv) {
         try {
             std::string configPath;
             ServerManager   manager;
+            ConfigParser    parser;
 
             configPath = argc == 1 ? "../configs/default.conf" : argv[1];
-            if (!manager.loadConfig(configPath)) {
+            if (!manager.loadConfigFile(configPath)) {
                 std::cerr << RED << "Failed to load configuration from " << configPath << RESET << std::endl;
                 return 1;
             }
-            
+            manager.setConfig(parser.parseConfigFile(configPath));
+            //create server
         }
         catch (const std::exception& e) {
             std::cerr << RED << "Error: " << e.what() << RESET << std::endl;

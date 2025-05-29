@@ -8,12 +8,12 @@ SRC_DIR = src
 INC_DIR = inc
 
 SRCS    = Config.cpp \
-		Connection.cpp \
+		Server.cpp \
+		ServerManager.cpp \
+		# Connection.cpp \
 		Location.cpp \
 		Request.cpp \
 		Response.cpp \
-		Server.cpp \
-		ServerManager.cpp
 
 
 OBJS    = $(SRCS:.cpp=.o)

@@ -3,6 +3,9 @@
 
 #include <iostream>
 #include <vector>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <fstream>
 #include "Config.hpp"
 #include "Server.hpp"
 
@@ -18,8 +21,8 @@
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
 
-class Config;
 class Server;
+class Config;
 
 class ServerManager {
 public:
@@ -30,7 +33,7 @@ public:
 private:
     /* member attributes */
     std::vector<Server> _servers;
-    Config              _config;
+    Config&             _config;
     int                 _max_fd;
     fd_set              _read_set,
                         _read_copy_set,
@@ -39,10 +42,10 @@ private:
                         _error_set,
                         _error_copy_set;
 
-    ServerManager();
 
 public:
     /* Orthodox Canonical Form (OCF) */
+    ServerManager();
     ServerManager(const Config&);
     ServerManager(const ServerManager& other);
     ~ServerManager();
@@ -65,7 +68,7 @@ public:
     // bool    isValidConfigBlock(const std::string&);
     // bool    isValidServerBlock(const std::string&);
     // bool    isValidLocationBlock(const std::string&);
-
+    bool    loadConfigFile(std::string path);
     void    createServer();
     void    runServer();
     void    exitServer(const std::string& msg);
@@ -76,6 +79,11 @@ public:
     bool    fdIsset(int fd, SetType) const;
     void    fdCopy(SetType origin, SetType copy);
     /* exception classes */
+    class ConfigLoadException : public std::runtime_error {
+        public:
+            ConfigLoadException(const std::string& msg) 
+            : std::runtime_error("Config Load Error: " + msg) {}
+    };
 };
 
 /* operators */

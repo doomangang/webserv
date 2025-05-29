@@ -26,7 +26,7 @@ public:
     enum TransferType { GENERAL, CHUNKED };
 private:
     /* member attributes */
-    static std::map<int, std::vector<std::string>> status;
+    static std::map<int, std::vector<std::string> > status;
     Connection* _connection;
     int         _status_code;
     std::string _status_description;

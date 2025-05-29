@@ -46,11 +46,11 @@ private:
 	std::vector<Location>       _locations;
 	std::map<int, Connection>   _connections;
 	std::queue<Response>        _responses;
-	Server();
 
 public:
 	/* Orthodox Canonical Form (OCF) */
-	Server(ServerManager*, std::string& server_block, std::string& location_blocks, Config*);
+	Server();
+	Server(ServerManager* manager, Config* config);
 	Server(const Server& other);
 	~Server();
 	Server& operator=(const Server& other);

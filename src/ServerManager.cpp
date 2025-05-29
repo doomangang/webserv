@@ -13,28 +13,36 @@ ServerManager::~ServerManager() {}
 ServerManager& ServerManager::operator=(const ServerManager& other) {
     if (this != &other) {
         _config = other._config;
+        _servers = other._servers;
+        _max_fd = other._max_fd;
+        _read_set = other._read_set;
+        _read_copy_set = other._read_copy_set;
+        _write_set = other._write_set;
+        _write_copy_set = other._write_copy_set;
+        _error_set = other._error_set;
+        _error_copy_set = other._error_copy_set;
     }
     return *this;
 }
 
-// methods
+bool ServerManager::loadConfigFile(std::string path) {
+    struct stat sb;
+    if (stat(path.c_str(), &sb) != 0)
+        throw ConfigLoadException("No such file: " + path);
+    
+    if (!S_ISREG(sb.st_mode))
+        throw ConfigLoadException("Directory or unreadable: " + path);
+    
+    if (sb.st_size == 0)
+        throw ConfigLoadException("File is empty: " + path);
 
-bool ServerManager::splitConfigString(const std::string& raw, 
-                                        std::string& outConfig, 
-                                        std::vector<std::string>& outServers) 
-{
-    // TODO: implement
-    return false;
+    std::ifstream ifs(path);
+    if (!ifs.is_open())
+        throw ConfigLoadException("Cannot open file: " + path);
+    
+    if (path.size() < 5 || path.substr(path.size() - 5) != ".conf")
+        throw ConfigLoadException("Wrong file format - should be *.conf: " + path);
 }
-
-bool ServerManager::splitServerString(const std::string& rawServer, 
-                                        std::string& outServerBlock, 
-                                        std::vector<std::string>& outLocationBlocks) 
-{
-    // TODO: implement
-    return false;
-}
-
 
 /*예를 들어 splitConfigString 은:
 

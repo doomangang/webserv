@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "Server.hpp"
+#include "Config.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -18,6 +19,7 @@
 #define GREY    "\033[38;5;250m"
 
 class Server;
+class Config;
 
 class ConfigParser {
 private:
@@ -44,3 +46,5 @@ public:
 in main(), parseConfigFile() is called to read the configuration file.
 
 */
+
+#endif
