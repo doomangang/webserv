@@ -7,11 +7,13 @@ CPPFLAGS= -Iinc
 SRC_DIR = src
 INC_DIR = inc
 
-SRCS    = Config.cpp \
+SRCS    = main.cpp \
+		Config.cpp \
+		ConfigParser.cpp \
 		Server.cpp \
 		ServerManager.cpp \
-		# Connection.cpp \
 		Location.cpp \
+		# Connection.cpp \
 		Request.cpp \
 		Response.cpp \
 

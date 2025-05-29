@@ -6,8 +6,8 @@
 #include <sys/stat.h>
 #include <sys/select.h>
 #include <fstream>
-#include "Config.hpp"
 #include "Server.hpp"
+#include "Config.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -22,7 +22,6 @@
 #define GREY    "\033[38;5;250m"
 
 class Server;
-class Config;
 
 class ServerManager {
 public:
@@ -33,7 +32,7 @@ public:
 private:
     /* member attributes */
     std::vector<Server> _servers;
-    Config&             _config;
+    Config              _config;
     int                 _max_fd;
     fd_set              _read_set,
                         _read_copy_set,
@@ -42,10 +41,9 @@ private:
                         _error_set,
                         _error_copy_set;
 
-
+    ServerManager();
 public:
     /* Orthodox Canonical Form (OCF) */
-    ServerManager();
     ServerManager(const Config&);
     ServerManager(const ServerManager& other);
     ~ServerManager();
@@ -58,32 +56,16 @@ public:
     void    setMaxFd(int);
 
     /* additional methods */
-    // bool    splitConfigString(const std::string& src,
-    //                             std::string& config_block,
-    //                             std::vector<std::string>& server_strings);
-    // bool    splitServerString(const std::string& src,
-    //                             std::string& server_block, 
-    //                             std::vector<std::string>& location_blocks);
+    // void    createServer();
+    // void    runServer();
+    // void    exitServer(const std::string& msg);
 
-    // bool    isValidConfigBlock(const std::string&);
-    // bool    isValidServerBlock(const std::string&);
-    // bool    isValidLocationBlock(const std::string&);
-    bool    loadConfigFile(std::string path);
-    void    createServer();
-    void    runServer();
-    void    exitServer(const std::string& msg);
-
-    void    fdSet(int fd, SetType);
-    void    fdZero(SetType);
-    void    fdClear(int fd, SetType);
-    bool    fdIsset(int fd, SetType) const;
-    void    fdCopy(SetType origin, SetType copy);
+    // void    fdSet(int fd, SetType);
+    // void    fdZero(SetType);
+    // void    fdClear(int fd, SetType);
+    // bool    fdIsset(int fd, SetType) const;
+    // void    fdCopy(SetType origin, SetType copy);
     /* exception classes */
-    class ConfigLoadException : public std::runtime_error {
-        public:
-            ConfigLoadException(const std::string& msg) 
-            : std::runtime_error("Config Load Error: " + msg) {}
-    };
 };
 
 /* operators */

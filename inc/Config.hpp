@@ -2,7 +2,9 @@
 #define CONFIG_HPP
 
 #include <iostream>
+#include <vector>
 #include "ConfigParser.hpp"
+#include "Server.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -21,16 +23,17 @@ class ConfigParser;
 class Config {
 private:
     /* member attributes */
+    std::vector<Server> _servers;
     std::string _software_name;
     std::string _software_version;
     std::string _http_version;
     std::string _cgi_version;
     char**      _base_env;
-    Config();
     
 public:
     /* Orthodox Canonical Form (OCF) */
-    Config(std::string& config_block, char* envp[]);
+    Config();
+    Config(std::vector<Server>, char* envp[]);
     Config(const Config& other);
     ~Config();
     Config& operator=(const Config& other);
@@ -41,6 +44,7 @@ public:
     std::string getHttpVersion()    const;
     std::string getCgiVersion()     const;
     char**      getBaseEnv()        const;
+    std::vector<Server> getServers()const;
     
     /* additional methods */
 

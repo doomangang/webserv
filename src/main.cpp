@@ -1,18 +1,16 @@
 #include "../inc/ServerManager.hpp"
+#include "../inc/ConfigParser.hpp"
+#include "../inc/Config.hpp"
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv, char** envp) {
     if (argc == 1 || argc == 2) {
         try {
             std::string configPath;
-            ServerManager   manager;
             ConfigParser    parser;
 
-            configPath = argc == 1 ? "../configs/default.conf" : argv[1];
-            if (!manager.loadConfigFile(configPath)) {
-                std::cerr << RED << "Failed to load configuration from " << configPath << RESET << std::endl;
-                return 1;
-            }
-            manager.setConfig(parser.parseConfigFile(configPath));
+            configPath = argc == 1 ? "./configs/default.conf" : argv[1];
+            parser.loadConfigFile(configPath);
+            ServerManager   manager(parser.parseConfigFile(configPath, envp));
             //create server
         }
         catch (const std::exception& e) {

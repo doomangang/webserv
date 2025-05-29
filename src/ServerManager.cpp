@@ -25,24 +25,10 @@ ServerManager& ServerManager::operator=(const ServerManager& other) {
     return *this;
 }
 
-bool ServerManager::loadConfigFile(std::string path) {
-    struct stat sb;
-    if (stat(path.c_str(), &sb) != 0)
-        throw ConfigLoadException("No such file: " + path);
-    
-    if (!S_ISREG(sb.st_mode))
-        throw ConfigLoadException("Directory or unreadable: " + path);
-    
-    if (sb.st_size == 0)
-        throw ConfigLoadException("File is empty: " + path);
-
-    std::ifstream ifs(path);
-    if (!ifs.is_open())
-        throw ConfigLoadException("Cannot open file: " + path);
-    
-    if (path.size() < 5 || path.substr(path.size() - 5) != ".conf")
-        throw ConfigLoadException("Wrong file format - should be *.conf: " + path);
-}
+Config ServerManager::getConfig() const { return _config; }
+int     ServerManager::getMaxFd() const { return _max_fd; }
+void    ServerManager::setConfig(const Config& config) { _config = config; }
+void    ServerManager::setMaxFd(int max_fd) { _max_fd = max_fd; }
 
 /*예를 들어 splitConfigString 은:
 

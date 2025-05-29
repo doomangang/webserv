@@ -27,11 +27,11 @@ private:
 	std::map<std::string, std::string>  _auth_basic_file;
 	std::set<std::string>               _index;
 	std::set<std::string>               _cgi;
-	bool                                _autoindex;
-	Location();
+	bool                                _auto_index;
 
 public:
 	/* Orthodox Canonical Form (OCF) */
+	Location();
 	Location(std::string& location_block);
 	Location(const Location& other);
 	~Location();
@@ -46,6 +46,14 @@ public:
 	std::set<std::string>               getIndex()          const;
 	std::set<std::string>               getCgi()            const;
 	bool                                getAutoIndex()      const;
+	void                         		setUri(std::string);
+	void                         		setRootPath(std::string, bool);
+	void               					setAllowMethod(std::set<std::string>);
+	void                         		setAuthBasicRealm();
+	void  								setAuthBasicFile() ;
+	void               					setIndex()         ;
+	void               					setCgi()           ;
+	void                                setAutoIndex()     ;
 	/* additional methods */
 
 	/* exception classes */

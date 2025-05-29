@@ -2,7 +2,14 @@
 #define CONFIGPARSER_HPP
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cctype>
+#include <cstdlib>
+#include <stdexcept>
 #include <vector>
+#include <sys/stat.h>
+#include <sys/select.h>
 #include "Server.hpp"
 #include "Config.hpp"
 
@@ -28,9 +35,15 @@ private:
     ConfigParser& operator=(const ConfigParser& other);
 
     /* private methods */
-    std::vector<std::string> extractBlocks(const std::string& config_block, 
-                                            const std::string& block_type);
-    
+    std::string                 readConfigFile(std::string);
+    std::string                 preprocessConfig(std::string);
+    void                        trim(std::string& s);
+    std::vector<std::string>    extractBlocks(const std::string config_block, 
+                                            const std::string block_type);
+    Server                      parseServerBlock(std::string);
+    std::vector<std::string>    splitBySemicolon(const std::string& s);
+    std::vector<std::string>    splitWords(const std::string& s);
+    Location                    parseLocationBlock(const std::string& locText);
 public:
     /* Orthodox Canonical Form (OCF) */
     ConfigParser();
@@ -39,7 +52,21 @@ public:
     /* getter & setter */
 
     /* additional methods */
-    Config parseConfigFile(const std::string& filename);
+    void    loadConfigFile(std::string);
+    Config  parseConfigFile(const std::string&, char* []);
+
+    /* exception classes */
+    class ConfigLoadException : public std::runtime_error {
+        public:
+            ConfigLoadException(const std::string& msg) 
+            : std::runtime_error("Config Load Error: " + msg) {}
+    };
+
+    class ConfigReadException : public std::runtime_error {
+        public:
+            ConfigReadException(const std::string& msg)
+            : std::runtime_error("Config Read Error: " + msg) {}
+    };
 };
 
 /*
