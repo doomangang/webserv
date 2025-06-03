@@ -12,6 +12,8 @@
 #include <sys/select.h>
 #include "Server.hpp"
 #include "Config.hpp"
+#include "Utils.hpp"
+#include "Location.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -37,13 +39,20 @@ private:
     /* private methods */
     std::string                 readConfigFile(std::string);
     std::string                 preprocessConfig(std::string);
-    void                        trim(std::string& s);
     std::vector<std::string>    extractBlocks(const std::string config_block, 
                                             const std::string block_type);
     Server                      parseServerBlock(std::string);
-    std::vector<std::string>    splitBySemicolon(const std::string& s);
-    std::vector<std::string>    splitWords(const std::string& s);
     Location                    parseLocationBlock(const std::string& locText);
+    std::string                 extractLocationUri(const std::string& text);
+    std::string                 extractBlockBody(const std::string& text);
+    std::vector<std::string>    splitStatements(const std::string& body);
+    void                        parseMethodsDirective(Location& loc, const std::string& stmt);
+    void                        parseRootDirective(Location& loc, const std::string& stmt);
+    void                        parseIndexDirective(Location& loc, const std::string& stmt);
+    void                        parseAutoindexDirective(Location& loc, const std::string& stmt);
+    void                        parseCgiDirective(Location& loc, const std::string& stmt);
+    void                        parseUploadStoreDirective(Location& loc, const std::string& stmt);
+    void                        parseReturnDirective(Location& loc, const std::string& stmt);
 public:
     /* Orthodox Canonical Form (OCF) */
     ConfigParser();

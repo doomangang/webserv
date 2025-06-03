@@ -1,63 +1,71 @@
+// Location.hpp
+
 #ifndef LOCATION_HPP
 #define LOCATION_HPP
 
 #include <iostream>
 #include <set>
 #include <map>
-
-/* Color Sets */
-#define RESET   "\033[0m"
-#define BLACK   "\033[30m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define MAGENTA "\033[35m"
-#define CYAN    "\033[36m"
-#define WHITE   "\033[37m"
-#define GREY    "\033[38;5;250m"
+#include <vector>
+#include <string>
 
 class Location {
 private:
-	/* member attributes */
-	std::string                         _uri;
-	std::string                         _root_path;
-	std::set<std::string>               _allow_method;
-	std::string                         _auth_basic_realm;
-	std::map<std::string, std::string>  _auth_basic_file;
-	std::set<std::string>               _index;
-	std::set<std::string>               _cgi;
-	bool                                _auto_index;
+    /* member attributes */
+    std::string              _uri;
+    std::string              _root_path;
+    std::set<std::string>    _allow_methods;
+    std::set<std::string>    _index_files;
+    std::set<std::string>    _cgi_extensions;
+    bool                     _autoindex;
+    bool                     _has_redirect;
+    int                      _redirect_code;
+    std::string              _redirect_url;
+    bool                     _has_upload_store;
+    std::string              _upload_store;
 
 public:
-	/* Orthodox Canonical Form (OCF) */
-	Location();
-	Location(std::string& location_block);
-	Location(const Location& other);
-	~Location();
-	Location& operator=(const Location& other);
+    /* Orthodox Canonical Form (OCF) */
+    Location();
+    Location(const std::string& location_block);
+    Location(const Location& other);
+    ~Location();
+    Location& operator=(const Location& other);
 
-	/* getter & setter */
-	std::string                         getUri()            const;
-	std::string                         getRootPath()       const;
-	std::set<std::string>               getAllowMethod()    const;
-	std::string                         getAuthBasicRealm() const;
-	std::map<std::string, std::string>  getAuthBasicFile()  const;
-	std::set<std::string>               getIndex()          const;
-	std::set<std::string>               getCgi()            const;
-	bool                                getAutoIndex()      const;
-	void                         		setUri(std::string);
-	void                         		setRootPath(std::string, bool);
-	void               					setAllowMethod(std::set<std::string>);
-	void                         		setAuthBasicRealm();
-	void  								setAuthBasicFile() ;
-	void               					setIndex()         ;
-	void               					setCgi()           ;
-	void                                setAutoIndex()     ;
-	/* additional methods */
+    /* getter & setter */
+    std::string getUri() const;
+    void setUri(const std::string& uri);
 
-	/* exception classes */
+    std::string getRootPath() const;
+    void setRootPath(const std::string& path);
+
+    std::set<std::string> getAllowMethods() const;
+    void setAllowMethods(std::set<std::string>& methods);
+
+    std::set<std::string> getIndexFiles() const;
+    void setIndexFiles(std::vector<std::string>& files);
+
+    std::set<std::string> getCgiExtensions() const;
+    void setCgiExtensions(std::set<std::string>& exts);
+
+    bool getAutoindex() const;
+    void setAutoindex(bool onoff);
+
+    bool hasRedirect() const;
+    int getRedirectCode() const;
+    std::string getRedirectUrl() const;
+    void setRedirect(int code, const std::string& url);
+
+    bool hasUploadStore() const;
+    std::string getUploadStore() const;
+    void setHasUploadStore(bool has);
+    void setUploadStore(const std::string& path);
+
+    /* additional methods */
+
+    /* exception classes */
 };
 
 /* operators */
-#endif
+
+#endif  // LOCATION_HPP

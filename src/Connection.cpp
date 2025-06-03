@@ -4,7 +4,7 @@ Connection::Connection() {
     std::cout << GREEN << "Connection default constructor called\n" << RESET << std::endl;
 }
 
-Connection::Connection(int client_fd, std::string& client_ip, int client_port) {
+Connection::Connection(int client_fd, const std::string& client_ip, int client_port) {
 
 }
 

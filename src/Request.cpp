@@ -4,7 +4,7 @@ Request::Request() {
     std::cout << GREEN << "Request default constructor called\n" << RESET << std::endl;
 }
 
-Request::Request(Connection*, Server*, std::string& start_line) {
+Request::Request(Connection*, Server*, const std::string& start_line) {
     
 }
 

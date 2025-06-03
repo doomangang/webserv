@@ -26,7 +26,7 @@ private:
 
 public:
     /* Orthodox Canonical Form (OCF) */
-    Connection(int client_fd, std::string& client_ip, int client_port);
+    Connection(int client_fd, const std::string& client_ip, int client_port);
     Connection(const Connection& other);
     ~Connection();
     Connection& operator=(const Connection& other);

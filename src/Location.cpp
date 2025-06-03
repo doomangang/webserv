@@ -1,39 +1,145 @@
+// Location.cpp
+
 #include "../inc/Location.hpp"
 
-Location::Location() {
+/* OCF: 기본 생성자 */
+Location::Location()
+	: _uri(""),
+	  _root_path(""),
+	  _allow_methods(),
+	  _index_files(),
+	  _cgi_extensions(),
+	  _autoindex(false),
+	  _has_redirect(false),
+	  _redirect_code(0),
+	  _redirect_url(""),
+	  _has_upload_store(false),
+	  _upload_store()
+{
 }
 
-Location::Location(std::string& location_block) {
-    (void) location_block;
+/* location_block 기반 생성자(필요하다면 파싱 로직을 추가) */
+Location::Location(const std::string& location_block)
+	: _uri(""),
+	  _root_path(""),
+	  _allow_methods(),
+	  _index_files(),
+	  _cgi_extensions(),
+	  _autoindex(false),
+	  _has_redirect(false),
+	  _redirect_code(0),
+	  _redirect_url(""),
+	  _has_upload_store(false),
+	  _upload_store()
+{ // TODO: location_block 파싱 로직이 필요한 경우 여기에 추가
+	(void)location_block; }
+
+/* 복사 생성자 */
+Location::Location(const Location& other)
+	: _uri(other._uri),
+	  _root_path(other._root_path),
+	  _allow_methods(other._allow_methods),
+	  _index_files(other._index_files),
+	  _cgi_extensions(other._cgi_extensions),
+	  _autoindex(other._autoindex),
+	  _has_redirect(other._has_redirect),
+	  _redirect_code(other._redirect_code),
+	  _redirect_url(other._redirect_url),
+	  _has_upload_store(other._has_upload_store),
+	  _upload_store(other._upload_store)
+{
 }
 
-Location::Location(const Location& other) {
-    *this = other;
-}
-
+/* 소멸자 */
 Location::~Location() {
 }
 
-Location& Location::operator=(const Location& other) {
-    if (this != &other) {
-        (void) other;
-    }
-    return *this;
+/* 대입 연산자 */
+Location& Location::operator=(const Location& other) { 
+	if (this != &other) {     
+		_uri              = other._uri;
+		_root_path        = other._root_path;
+		_allow_methods    = other._allow_methods;
+		_index_files      = other._index_files;
+		_cgi_extensions   = other._cgi_extensions;
+		_autoindex        = other._autoindex;
+		_has_redirect     = other._has_redirect;
+		_redirect_code    = other._redirect_code;
+		_redirect_url     = other._redirect_url;
+		_has_upload_store = other._has_upload_store;
+		_upload_store     = other._upload_store;
+	}
+	return *this; 
 }
 
-	std::string                         Location::getUri()            const { return _uri;}
-	std::string                         Location::getRootPath()       const { return _root_path;}
-	std::set<std::string>               Location::getAllowMethod()    const { return _allow_method;}
-	std::string                         Location::getAuthBasicRealm() const { return _auth_basic_realm;}
-	std::map<std::string, std::string>  Location::getAuthBasicFile()  const { return _auth_basic_file;}
-	std::set<std::string>               Location::getIndex()          const { return _index;}
-	std::set<std::string>               Location::getCgi()            const { return _cgi;}
-	bool                                Location::getAutoIndex()      const { return _auto_index;}
-	void                         		Location::setUri(std::string uri) { _uri = uri; }
-	void                         		Location::setRootPath(std::string, bool) {}
-	void               					Location::setAllowMethod(std::Location::set<std::string>)    {}
-	void                         		Location::setAuthBasicRealm() {}
-	void  								Location::setAuthBasicFile()  {}
-	void               					Location::setIndex()          {}
-	void               					Location::setCgi()            {}
-	void                                Location::setAutoIndex()      {}
+/* getter 구현 */
+std::string Location::getUri() const { return _uri; }
+
+std::string Location::getRootPath() const { return _root_path; }
+
+std::set<std::string> Location::getAllowMethods() const { return _allow_methods; }
+
+std::set<std::string> Location::getIndexFiles() const { return _index_files; }
+
+std::set<std::string> Location::getCgiExtensions() const { return _cgi_extensions; }
+
+bool Location::getAutoindex() const { return _autoindex; }
+
+bool Location::hasRedirect() const { return _has_redirect; }
+
+int Location::getRedirectCode() const { return _redirect_code; }
+
+std::string Location::getRedirectUrl() const { return _redirect_url; }
+
+bool Location::hasUploadStore() const { return _has_upload_store; }
+
+std::string Location::getUploadStore() const { return _upload_store; }
+
+/* setter 구현 */
+void Location::setUri(const std::string& uri) { _uri = uri; }
+
+void Location::setRootPath(const std::string& path) { _root_path = path; }
+
+void Location::setAllowMethods(std::set<std::string>& methods) { _allow_methods = methods; }
+
+void Location::setIndexFiles(std::vector<std::string>& files) {
+	_index_files.clear();
+	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it) {
+		_index_files.insert(*it);
+	}
+}
+
+void Location::setCgiExtensions(std::set<std::string>& exts) { _cgi_extensions = exts; }
+
+void Location::setAutoindex(bool onoff) { _autoindex = onoff; }
+
+void Location::setRedirect(int code, const std::string& url) { 
+	_has_redirect  = true;
+	_redirect_code = code;
+	_redirect_url  = url; 
+}
+
+void Location::setHasUploadStore(bool has) { _has_upload_store = has; }
+
+void Location::setUploadStore(const std::string& path) { 
+	_has_upload_store = true;
+	_upload_store     = path; 
+}
+
+
+
+/*
+src/ConfigParser.cpp:321:18: error: no matching constructor for initialization of 'Location'
+  321 |         Location loc = parseLocationBlock(locBlocks[k]);
+      |                  ^     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/../inc/Location.hpp:30:5: note: candidate constructor not viable: no known conversion from 'Location' to 'std::string &' (aka 'basic_string<char> &') for 1st argument
+   30 |     Location(const std::string& location_block);
+      |     ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/../inc/Location.hpp:31:5: note: candidate constructor not viable: expects an lvalue for 1st argument
+   31 |     Location(Location& other);
+      |     ^        ~~~~~~~~~~~~~~~
+src/../inc/Location.hpp:29:5: note: candidate constructor not viable: requires 0 arguments, but 1 was provided
+   29 |     Location();
+      |     ^
+1 error generated.
+*/
