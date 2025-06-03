@@ -77,7 +77,7 @@ std::string Location::getUri() const { return _uri; }
 
 std::string Location::getRootPath() const { return _root_path; }
 
-std::set<std::string> Location::getAllowMethods() const { return _allow_methods; }
+std::set<enum Method> Location::getAllowMethods() const { return _allow_methods; }
 
 std::set<std::string> Location::getIndexFiles() const { return _index_files; }
 
@@ -100,7 +100,11 @@ void Location::setUri(const std::string& uri) { _uri = uri; }
 
 void Location::setRootPath(const std::string& path) { _root_path = path; }
 
-void Location::setAllowMethods(std::set<std::string>& methods) { _allow_methods = methods; }
+void Location::setAllowMethods(std::set<enum Method>& methods) { _allow_methods = methods; }
+
+void Location::addAllowMethod(Method m) { _allow_methods.insert(m); }
+
+void Location::clearAllowMethods() { _allow_methods.clear(); }
 
 void Location::setIndexFiles(std::vector<std::string>& files) {
 	_index_files.clear();
@@ -125,21 +129,3 @@ void Location::setUploadStore(const std::string& path) {
 	_has_upload_store = true;
 	_upload_store     = path; 
 }
-
-
-
-/*
-src/ConfigParser.cpp:321:18: error: no matching constructor for initialization of 'Location'
-  321 |         Location loc = parseLocationBlock(locBlocks[k]);
-      |                  ^     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-src/../inc/Location.hpp:30:5: note: candidate constructor not viable: no known conversion from 'Location' to 'std::string &' (aka 'basic_string<char> &') for 1st argument
-   30 |     Location(const std::string& location_block);
-      |     ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-src/../inc/Location.hpp:31:5: note: candidate constructor not viable: expects an lvalue for 1st argument
-   31 |     Location(Location& other);
-      |     ^        ~~~~~~~~~~~~~~~
-src/../inc/Location.hpp:29:5: note: candidate constructor not viable: requires 0 arguments, but 1 was provided
-   29 |     Location();
-      |     ^
-1 error generated.
-*/

@@ -8,13 +8,14 @@
 #include <map>
 #include <vector>
 #include <string>
+#include "Enum.hpp"
 
 class Location {
 private:
     /* member attributes */
     std::string              _uri;
     std::string              _root_path;
-    std::set<std::string>    _allow_methods;
+    std::set<enum Method>    _allow_methods;
     std::set<std::string>    _index_files;
     std::set<std::string>    _cgi_extensions;
     bool                     _autoindex;
@@ -39,8 +40,10 @@ public:
     std::string getRootPath() const;
     void setRootPath(const std::string& path);
 
-    std::set<std::string> getAllowMethods() const;
-    void setAllowMethods(std::set<std::string>& methods);
+    std::set<enum Method> getAllowMethods() const;
+    void setAllowMethods(std::set<enum Method>& methods);
+    void addAllowMethod(Method m);
+    void clearAllowMethods();
 
     std::set<std::string> getIndexFiles() const;
     void setIndexFiles(std::vector<std::string>& files);

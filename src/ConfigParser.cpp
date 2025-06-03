@@ -54,7 +54,8 @@ Config ConfigParser::parseConfigFile(const std::string& path, char* envp[]) {
         for (size_t i = 0; i < servers.size(); ++i) {
             unsigned short p = servers[i].getPort();
             if (!ports.insert(p).second) {
-                throw std::runtime_error("Duplicate listen port: " + std::to_string(p));
+                std::ostringstream oss; oss << p;
+                throw std::runtime_error("Duplicate listen port: " + oss.str());
             }
         }
     }
@@ -231,7 +232,7 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
             if (line.find("location") == 0 && line.find('{') != std::string::npos)
                 continue;
             // Must end with ';'
-            if (line.back() != ';')
+            if (line[line.size() - 1] != ';')
                 throw std::runtime_error("Missing semicolon in server directive: " + line);
         }
     }
@@ -359,10 +360,10 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
 
     // 5) Default methods 설정 (GET, POST, DELETE)
     if (loc.getAllowMethods().empty()) {
-        std::set<std::string> defaults;
-        defaults.insert("GET");
-        defaults.insert("POST");
-        defaults.insert("DELETE");
+        std::set<enum Method> defaults;
+        defaults.insert(GET);
+        defaults.insert(POST);
+        defaults.insert(DELETE);
         loc.setAllowMethods(defaults);
     }
 
@@ -400,9 +401,18 @@ std::vector<std::string> ConfigParser::splitStatements(const std::string& body) 
 
 void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt) {
     // "methods GET POST DELETE"
+    loc.clearAllowMethods();
+
     std::vector<std::string> words = Utils::splitWords(stmt.substr(8));
     std::set<std::string> methods(words.begin(), words.end());
-    loc.setAllowMethods(methods);
+    for (size_t i = 0; i < words.size(); ++i) {
+        const std::string& w = words[i];
+        if (w == "GET") loc.addAllowMethod(GET);
+        else if (w == "POST") loc.addAllowMethod(POST);
+        else if (w == "DELETE") loc.addAllowMethod(DELETE);
+        else if (w == "EMPTY") loc.addAllowMethod(EMPTY);
+        else loc.addAllowMethod(UNKNOWN);
+    }
 }
 
 void ConfigParser::parseReturnDirective(Location& loc, const std::string& stmt) {

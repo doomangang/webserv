@@ -37,7 +37,7 @@ clean:
 	rm -f $(OBJS) $(DEPS)
 
 fclean: clean
-	rm -f $(NAME)
+	rm -f $(NAME) test_server
 
 re: fclean all
 

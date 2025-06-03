@@ -2,6 +2,7 @@
 #define CONNECTION_HPP
 
 #include <iostream>
+#include <sys/socket.h>
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -22,6 +23,7 @@ private:
     timeval     _last_request_at;
     std::string _client_ip;
     int         _client_port;
+    std::string _raw_buffer;
     Connection();
 
 public:
@@ -38,7 +40,7 @@ public:
     int         getClientPort() const;
     void        setLastRequestAt(const timeval&);
     /* additional methods */
-
+    void        readClient();
     /* exception classes */
 };
 

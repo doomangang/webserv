@@ -5,11 +5,13 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <cstdlib>
 #include <map>
 #include <set>
 #include "../inc/Server.hpp"
 #include "../inc/Location.hpp"
 #include "../inc/Utils.hpp"
+#include "../inc/Enum.hpp"
 
 // ------------------------------------------------------------------------------------------------
 // (1) ConfigParser stub: "default.conf"를 최소한 수준으로 파싱해서 Server/Location에 채워넣는다.
@@ -69,7 +71,7 @@ public:
                 ServerManager* dummy_mgr = NULL;
                 Config*       dummy_cfg = NULL;
                 result.push_back(Server(dummy_mgr, "", "", dummy_cfg));
-                current_srv = &result.back();
+                current_srv = &result[result.size() - 1];
                 continue;
             }
 
@@ -117,8 +119,8 @@ public:
                         std::string addr_port;
                         ss >> addr_port;
                         // “:8080;”에서 “;” 제거
-                        if (!addr_port.empty() && addr_port.back() == ';')
-                            addr_port.pop_back();
+                        if (!addr_port.empty() && addr_port[addr_port.size() - 1] == ';')
+                            addr_port.erase(addr_port.length() - 1, 1);
                         // “127.0.0.1:8080”을 host, port로 분리
                         size_t colon = addr_port.find(':');
                         if (colon != std::string::npos) {
@@ -132,8 +134,8 @@ public:
                         // 형식: server_name example.com www.example.com;
                         std::string name;
                         while (ss >> name) {
-                            if (!name.empty() && name.back() == ';')
-                                name.pop_back();
+                            if (!name.empty() && name[name.size() - 1] == ';')
+                                name.erase(name.length() - 1, 1);
                             current_srv->addServerName(name);
                         }
                     }
@@ -141,8 +143,8 @@ public:
                         // 형식: root /var/www/html;
                         std::string path;
                         ss >> path;
-                        if (!path.empty() && path.back() == ';')
-                            path.pop_back();
+                        if (!path.empty() && path[path.size() - 1] == ';')
+                            path.erase(path.length() - 1, 1);
                         current_srv->setRootPath(path);
                     }
                     else if (token == "index") {
@@ -151,8 +153,8 @@ public:
                         std::string fname;
                         while (ss >> fname) {
                             // 마지막에 “;”가 붙어 있으면 한 번에 제거
-                            if (!fname.empty() && fname.back() == ';') {
-                                fname.pop_back();
+                            if (!fname.empty() && fname[fname.size() - 1] == ';') {
+                                fname.erase(fname.length() - 1, 1);
                                 idxs.push_back(fname);
                                 break;
                             }
@@ -164,8 +166,8 @@ public:
                         // 형식: autoindex on; 또는 autoindex off;
                         std::string opt;
                         ss >> opt;
-                        if (!opt.empty() && opt.back() == ';')
-                            opt.pop_back();
+                        if (!opt.empty() && opt[opt.size() - 1] == ';')
+                            opt.erase(opt.length() - 1, 1);
                         if (opt == "on")
                             current_srv->setAutoindex(true);
                         else
@@ -175,8 +177,8 @@ public:
                         // 형식: upload_store /tmp/uploads;
                         std::string path;
                         ss >> path;
-                        if (!path.empty() && path.back() == ';')
-                            path.pop_back();
+                        if (!path.empty() && path[path.size() - 1] == ';')
+                            path.erase(path.length() - 1, 1);
                         current_srv->setHasUploadStore(true);
                         current_srv->setUploadStore(path);
                     }
@@ -185,8 +187,8 @@ public:
                         int code;
                         std::string page;
                         ss >> code >> page;
-                        if (!page.empty() && page.back() == ';')
-                            page.pop_back();
+                        if (!page.empty() && page[page.size() - 1] == ';')
+                            page.erase(page.length() - 1, 1);
                         current_srv->addErrorPage(code, page);
                     }
                     // 필요에 따라 다른 지시문도 여기에 추가 가능
@@ -196,16 +198,16 @@ public:
                     if (token == "root") {
                         std::string path;
                         ss >> path;
-                        if (!path.empty() && path.back() == ';')
-                            path.pop_back();
+                        if (!path.empty() && path[path.size() - 1] == ';')
+                            path.erase(path.length() - 1, 1);
                         current_loc->setRootPath(path);
                     }
                     else if (token == "index") {
                         std::vector<std::string> idxs;
                         std::string fname;
                         while (ss >> fname) {
-                            if (!fname.empty() && fname.back() == ';') {
-                                fname.pop_back();
+                            if (!fname.empty() && fname[fname.size() - 1] == ';') {
+                                fname.erase(fname.length() - 1, 1);
                                 idxs.push_back(fname);
                                 break;
                             }
@@ -214,21 +216,30 @@ public:
                         current_loc->setIndexFiles(idxs);
                     }
                     else if (token == "allow_methods") {
-                        std::set<std::string> methods;
-                        std::string m;
-                        while (ss >> m) {
-                            if (!m.empty() && m.back() == ';')
-                                m.pop_back();
-                            methods.insert(m);
+                        // 문자열을 enum Method 로 변환하여 저장
+                        std::string mstr;
+                        current_loc->clearAllowMethods();
+                        while (ss >> mstr) {
+                            if (!mstr.empty() && mstr[mstr.size() - 1] == ';') mstr.erase(mstr.length() - 1, 1);
+                            if (mstr == "GET")
+                                current_loc->addAllowMethod(GET);
+                            else if (mstr == "POST")
+                                current_loc->addAllowMethod(POST);
+                            else if (mstr == "DELETE")
+                                current_loc->addAllowMethod(DELETE);
+                            else if (mstr == "EMPTY")
+                                current_loc->addAllowMethod(EMPTY);
+                            else
+                                current_loc->addAllowMethod(UNKNOWN);
+                            // 필요하다면 오류 처리 추가
                         }
-                        current_loc->setAllowMethods(methods);
                     }
                     else if (token == "cgi_extension") {
                         // 형식: cgi_extension .php /usr/bin/php-cgi;
                         std::string ext, binpath;
                         ss >> ext >> binpath;
-                        if (!binpath.empty() && binpath.back() == ';')
-                            binpath.pop_back();
+                        if (!binpath.empty() && binpath[binpath.size() - 1] == ';')
+                            binpath.erase(binpath.length() - 1, 1);
                         std::set<std::string> exts = current_loc->getCgiExtensions();
                         exts.insert(ext);
                         current_loc->setCgiExtensions(exts);
@@ -237,8 +248,8 @@ public:
                     else if (token == "autoindex") {
                         std::string opt;
                         ss >> opt;
-                        if (!opt.empty() && opt.back() == ';')
-                            opt.pop_back();
+                        if (!opt.empty() && opt[opt.size() - 1] == ';')
+                            opt.erase(opt.length() - 1, 1);
                         current_loc->setAutoindex(opt == "on");
                     }
                     else if (token == "return") {
@@ -246,15 +257,15 @@ public:
                         int code;
                         std::string url;
                         ss >> code >> url;
-                        if (!url.empty() && url.back() == ';')
-                            url.pop_back();
+                        if (!url.empty() && url[url.size() - 1] == ';')
+                            url.erase(url.length() - 1, 1);
                         current_loc->setRedirect(code, url);
                     }
                     else if (token == "upload_store") {
                         std::string path;
                         ss >> path;
-                        if (!path.empty() && path.back() == ';')
-                            path.pop_back();
+                        if (!path.empty() && path[path.size() - 1] == ';')
+                            path.erase(path.length() - 1, 1);
                         current_loc->setHasUploadStore(true);
                         current_loc->setUploadStore(path);
                     }
@@ -270,6 +281,16 @@ private:
     std::string _path;
 };
 
+static const char* methodToString(Method m) {
+    switch (m) {
+        case GET:     return "GET";
+        case POST:    return "POST";
+        case DELETE: return "DELETE";
+        case EMPTY: return "EMTPY";
+        case UNKNOWN: return "(unknown)";
+    }
+    return "(error)";
+}
 // ------------------------------------------------------------------------------------------------
 // (2) Server/Location 출력 함수: 모든 멤버를 눈으로 확인하기 위해 std::cout 으로 찍어준다.
 // ------------------------------------------------------------------------------------------------
@@ -278,16 +299,16 @@ static void printLocation(const Location& loc) {
     std::cout << "    URI: " << loc.getUri() << "\n";
     std::cout << "    RootPath: " << loc.getRootPath() << "\n";
 
-    // AllowMethods
-    const std::set<std::string> methods = loc.getAllowMethods();
+    // AllowMethods (enum 출력)
+    const std::set<Method> methods = loc.getAllowMethods();
     std::cout << "    AllowMethods: ";
     if (methods.empty()) {
         std::cout << "(none)";
     } else {
         bool first = true;
-        for (std::set<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+        for (std::set<Method>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
             if (!first) std::cout << ", ";
-            std::cout << *it;
+            std::cout << methodToString(*it);
             first = false;
         }
     }

@@ -1,26 +1,32 @@
 #include "../inc/Connection.hpp"
 
-Connection::Connection() {
-    std::cout << GREEN << "Connection default constructor called\n" << RESET << std::endl;
+void Connection::readClient() {
+    char buf[8192];
+    ssize_t n = recv(fd, buf, sizeof(buf), 0);
+    if (n > 0) {
+        
+    }
 }
+
+
+
+
+
+
+//ocf
+Connection::Connection() {}
 
 Connection::Connection(int client_fd, const std::string& client_ip, int client_port) {
-
+    (void)client_fd; (void)client_ip; (void)client_port;
 }
 
-Connection::Connection(const Connection& other) {
-    *this = other;
-    std::cout << GREEN << "Connection copy constructor called\n" << RESET << std::endl;
-}
+Connection::Connection(const Connection& other) { *this = other; }
 
-Connection::~Connection() {
-    std::cout << RED << "Connection destructor called\n" << RESET << std::endl;
-}
+Connection::~Connection() {}
 
 Connection& Connection::operator=(const Connection& other) {
-    std::cout << YELLOW << "Connection assignment operator called\n" << RESET << std::endl;
     if (this != &other) {
-        // assignment code here
+        this->_fd = other.getFd();
     }
     return *this;
 }
