@@ -1,7 +1,18 @@
 #include "../inc/Connection.hpp"
 
-Connection::Connection() : _fd(-1), _request(), _response(), _progress(FROM_CLIENT),
-    _bytes_sent(0), _client_port(0), _config_ptr(nullptr), _server_ptr(nullptr), _location_ptr(nullptr) {
+Connection::Connection() 
+    : _fd(-1),
+      _request(),
+      _response(),
+      _parser(),
+      _progress(FROM_CLIENT),
+      _bytes_sent(0),
+      _client_port(0),
+      _config_ptr(NULL),
+      _server_ptr(NULL),
+      _location_ptr(NULL) {
+    timeval tv = {0, 0};
+    _last_request_at = tv;
 }
 
 Connection::Connection(int client_fd, const std::string& client_ip, int client_port)
@@ -218,37 +229,170 @@ Connection& Connection::operator=(const Connection& other) {
     return *this;
 }
 
+// Connection.cpp - processRequest 메서드 확장
 void Connection::processRequest() {
-    // 요청 처리 로직
-    if (_request.hasError()) {
-        prepareErrorResponse(_request.getErrorCode());
-        _progress = TO_CLIENT;
+    // 1. 메서드 검증
+    if (!isMethodAllowed()) {
+        prepareErrorResponse(405);
         return;
     }
-
-    // HTTP 메서드에 따른 처리
-    switch (_request.getMethod()) {
-        case GET:
-            // GET 요청 처리
-            prepareResponse();
-            break;
-        case POST:
-            // POST 요청 처리
-            prepareResponse();
-            break;
-        case DELETE:
-            // DELETE 요청 처리
-            prepareResponse();
-            break;
-        default:
-            // 지원하지 않는 메서드
-            prepareErrorResponse(405);  // Method Not Allowed
-            break;
+    
+    // 2. 리다이렉트 체크
+    if (_location_ptr->hasRedirect()) {
+        handleRedirect();
+        return;
     }
+    
+    // 3. CGI 체크
+    if (isCGIRequest()) {
+        handleCGI();
+        return;
+    }
+    
+    // 4. 정적 파일/디렉토리 처리
+    std::string file_path = resolveFilePath();
+    struct stat file_stat;
+    
+    if (stat(file_path.c_str(), &file_stat) == 0) {
+        if (S_ISDIR(file_stat.st_mode)) {
+            handleDirectoryListing();
+        } else if (S_ISREG(file_stat.st_mode)) {
+            handleStaticFile();
+        }
+    } else {
+        prepareErrorResponse(404);
+    }
+}
 
+// 정적 파일 처리 예시
+void Connection::handleStaticFile() {
+    std::string file_path = resolveFilePath();
+    std::ifstream file(file_path, std::ios::binary);
+    
+    if (!file) {
+        prepareErrorResponse(404);
+        return;
+    }
+    
+    // 파일 크기 확인
+    file.seekg(0, std::ios::end);
+    size_t file_size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    
+    // 파일 내용 읽기
+    std::string content(file_size, '\0');
+    file.read(&content[0], file_size);
+    
+    // Response 생성
+    _response.setStatusCode(200);
+    _response.setHeader("Content-Type", Utils::getMimeType(file_path));
+    _response.setHeader("Content-Length", std::to_string(file_size));
+    _response.setBody(content);
+    
+    // Connection 헤더 처리
+    std::string connection = _request.getHeaderValue("connection");
+    if (connection == "close") {
+        _response.setHeader("Connection", "close");
+    } else {
+        _response.setHeader("Connection", "keep-alive");
+    }
+    
+    _response_buf = _response.toString();
     _progress = TO_CLIENT;
+}
+
+// Connection::writeClient 개선
+void Connection::writeClient() {
+    if (_response_buf.empty()) {
+        prepareResponse();
+    }
+    
+    // MSG_DONTWAIT 플래그로 비동기 전송
+    ssize_t sent = send(_fd, 
+                       _response_buf.c_str() + _bytes_sent,
+                       _response_buf.size() - _bytes_sent,
+                       MSG_DONTWAIT);
+    
+    if (sent > 0) {
+        _bytes_sent += sent;
+        
+        if (_bytes_sent >= _response_buf.size()) {
+            // 전송 완료
+            if (_response.getHeader("Connection") == "close") {
+                _progress = END_CONNECTION;
+            } else {
+                // Keep-alive: 연결 유지하고 다음 요청 대기
+                resetConnection();
+                _progress = FROM_CLIENT;
+            }
+        }
+    } else if (sent == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // 버퍼가 가득 참 - 나중에 다시 시도
+            return;
+        }
+        // 실제 에러 발생
+        _progress = END_CONNECTION;
+    }
 }
 
 int Connection::getFd() const {
     return _fd;
+}
+
+timeval Connection::getLastRequestAt() const {
+    return _last_request_at;
+}
+
+std::string Connection::getClientIp() const {
+    return _client_ip;
+}
+
+int Connection::getClientPort() const {
+    return _client_port;
+}
+
+Progress Connection::getProgress() const {
+    return _progress;
+}
+
+void Connection::setLastRequestAt(const timeval& tv) {
+    _last_request_at = tv;
+}
+
+bool Connection::isComplete() const {
+    return _progress == END_CONNECTION;
+}
+
+bool Connection::needsRead() const {
+    return _progress == FROM_CLIENT || _progress == READ_CONTINUE;
+}
+
+bool Connection::needsWrite() const {
+    return _progress == TO_CLIENT;
+}
+
+    if (_response_buf.empty()) {
+        prepareResponse();
+    }
+    
+    size_t to_send = _response_buf.size() - _bytes_sent;
+    ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
+    
+    if (sent > 0) {
+        _bytes_sent += sent;
+        if (_bytes_sent >= _response_buf.size()) {
+            // 전송 완료
+            if (_request.getHeaderValue("connection") == "close") {
+                _progress = END_CONNECTION;
+            } else {
+                // keep-alive: 다음 요청 대기
+                resetConnection();
+            }
+        }
+    } else if (sent < 0) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            _progress = END_CONNECTION;
+        }
+    }
 }

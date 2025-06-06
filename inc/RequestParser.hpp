@@ -45,6 +45,8 @@ public:
     void parseHeaders(Request& request);
     void parseBody(Request& request);
 
+    void reset();
+
 private:
     Incomplete _parse_state;
     size_t _max_body_size;

@@ -10,6 +10,7 @@
 #include "Enum.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "ResponseWriter.hpp"
 #include "RequestParser.hpp"
 #include "Server.hpp"
 #include "Location.hpp"
@@ -32,7 +33,6 @@ private:
     int             _fd;
     //parser related
     Request         _request;
-    Response        _response;
     RequestParser   _parser;
 
     Progress        _progress;
@@ -48,8 +48,8 @@ private:
     const Server*   _server_ptr;
     const Location* _location_ptr;
 
-    //Occf
-    Connection();
+    Response        _response;
+    ResponseWriter  _writer;
 
     void            setupServerAndLocation();
     void            setServerData();
@@ -60,8 +60,14 @@ private:
 
     void            resetConnection();
 
+    void handleStaticFile();
+    void handleDirectoryListing();
+    void handleCGI();
+    void handleRedirect();
+
 public:
     /* Orthodox Canonical Form (OCF) */
+    Connection();
     Connection(int client_fd, const std::string& client_ip, int client_port);
     Connection(const Connection& other);
     ~Connection();

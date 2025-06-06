@@ -1,8 +1,12 @@
 #include "../inc/Response.hpp"
 #include "../inc/Connection.hpp"
 
-Response::Response() {
-    std::cout << GREEN << "Response default constructor called\n" << RESET << std::endl;
+Response::Response() 
+    : _connection(NULL),
+      _status_code(200),
+      _status_description("OK"),
+      _transfer_type(GENERAL),
+      _content("") {
 }
 
 Response::Response(Connection* conn, int status_code, const std::string& body) 
@@ -95,4 +99,32 @@ std::string Response::toString() const {
     oss << _content;
     
     return oss.str();
+}
+
+Connection* Response::getConnection() const {
+    return _connection;
+}
+
+int Response::getStatusCode() const {
+    return _status_code;
+}
+
+std::string Response::getStatusDescription() const {
+    return _status_description;
+}
+
+std::map<std::string, std::string> Response::getHeaders() const {
+    return _headers;
+}
+
+Response::TransferType Response::getTransferType() const {
+    return _transfer_type;
+}
+
+std::string Response::getContent() const {
+    return _content;
+}
+
+void Response::addHeader(const std::string& key, const std::string& value) {
+    _headers[key] = value;
 }

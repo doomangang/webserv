@@ -34,6 +34,8 @@ public:
     static void trim(std::string& s);
     static std::vector<std::string>    splitBySemicolon(const std::string& s);
     static std::vector<std::string>    splitWords(const std::string& s);
+    static std::string getMimeType(const std::string& path);
+
     /* exception classes */
 };
 

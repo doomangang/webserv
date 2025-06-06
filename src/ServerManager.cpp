@@ -2,9 +2,28 @@
 
 //OCF
 
-ServerManager::ServerManager() {}
+ServerManager::ServerManager() 
+    : _max_fd(0) {
+    FD_ZERO(&_read_set);
+    FD_ZERO(&_read_copy_set);
+    FD_ZERO(&_write_set);
+    FD_ZERO(&_write_copy_set);
+    FD_ZERO(&_error_set);
+    FD_ZERO(&_error_copy_set);
+}
 
-ServerManager::ServerManager(const Config& config) : _config(config){}
+ServerManager::ServerManager(const Config& config) 
+    : _config(config),
+      _max_fd(0) {
+    FD_ZERO(&_read_set);
+    FD_ZERO(&_read_copy_set);
+    FD_ZERO(&_write_set);
+    FD_ZERO(&_write_copy_set);
+    FD_ZERO(&_error_set);
+    FD_ZERO(&_error_copy_set);
+    
+    _servers = config.getServers();
+}
 
 ServerManager::ServerManager(const ServerManager& other) : _config(other._config){}
 

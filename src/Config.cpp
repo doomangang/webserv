@@ -1,8 +1,21 @@
 #include "../inc/Config.hpp"
 
-Config::Config() {}
+Config::Config() 
+    : _software_name("webserv"),
+      _software_version("1.0"),
+      _http_version("HTTP/1.1"),
+      _cgi_version("CGI/1.1"),
+      _base_env(NULL) {
+}
 
-Config::Config(std::vector<Server> servers, char* envp[]) : _servers(servers), _base_env(envp) {}
+Config::Config(std::vector<Server> servers, char* envp[]) 
+    : _servers(servers),
+      _software_name("webserv"),
+      _software_version("1.0"),
+      _http_version("HTTP/1.1"),
+      _cgi_version("CGI/1.1"),
+      _base_env(envp) {
+}
 
 Config::Config(const Config& other) :_base_env(other._base_env){}
 

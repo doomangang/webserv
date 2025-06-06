@@ -237,3 +237,11 @@ bool parseRawRequest(const std::string &raw_request, Request &req) {
     req.setStatus(COMPLETE);
     return true;
 }
+
+void RequestParser::reset() {
+    _parse_state = NONE;
+    _expected_body_size = 0;
+    _received_body_size = 0;
+    _header_end_pos = 0;
+    _raw_buffer.clear();
+}
