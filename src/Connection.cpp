@@ -12,26 +12,177 @@ void Connection::readClient() {
     char buf[8192];
     ssize_t n = recv(_fd, buf, sizeof(buf), 0);
     if (n <= 0) {
-        _progress = END_CONNECTION; 
+        if (n == 0)
+            _progress = END_CONNECTION; 
+        else {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return ;
+            _progress = END_CONNECTION;
+        }
         return ;
     }
-    std::string& _raw_buffer = this->_raw_buffer;
-    _raw_buffer = _raw_buffer + std::string(buf, n); // _raw_buffer에 읽은 데이터를 추가
 
-    
-    _progress = FROM_CLIENT; // 현재 진행 상태를 FROM_CLIENT로 설정
-    _last_request_at = {}; // 현재 시간을 설정 (초기화)
-    _client_ip = ""; // 클라이언트 IP 주소를 설정 (예시로 빈 문자열 사용)
-    _client_port = 0; // 클라이언트 포트를 설정 (예시로 0 사용)
-    // _raw_buffer에 읽은 데이터를 추가
-    _raw_buffer.append(buf, n);
+    std::string& raw_buffer = _parser.getRawBuffer();
+    raw_buffer.append(buf, n);
 
+    try {
+        if (!_parser.isRequestLineComplete() && 
+            raw_buffer.find("\r\n") != std::string::npos) {
+            
+            _parser.parseRequestLine(_request);
+            
+            if (_parser.isBadRequest()) {
+                _progress = TO_CLIENT;
+                return;
+            }
+        }
+        
+        if (_parser.isRequestLineComplete() && 
+            !_parser.isHeadersComplete() &&
+            raw_buffer.find("\r\n\r\n") != std::string::npos) {
+            
+            _parser.parseHeaders(_request);
+            
+            if (_parser.isBadRequest()) {
+                _progress = TO_CLIENT;
+                return;
+            }
+            
+            setupServerAndLocation();
+        }
+        
+        if (_parser.isHeadersComplete()) {
+            _parser.parseBody(_request);
+            
+            if (_parser.isBadRequest()) {
+                _progress = TO_CLIENT;
+                return;
+            }
+        }
+        
+        // 4. 전체 파싱 상태에 따른 진행 상태 업데이트
+        updateProgress();
+        
+    } catch (const std::exception& e) {
+        _request.setErrorCode(400);
+        _progress = TO_CLIENT;
+    }
 }
 
+void    Connection::setupServerAndLocation() {
+    if (_server_ptr == NULL)
+        setServerData();
 
+    if (_location_ptr == NULL)
+        setLocationData();
 
+    if (_server_ptr)
+        _parser.setMaxBodySize(_server_ptr->getLimitClientBodySize());
+}
 
+void    Connection::updateProgress() {
+    Incomplete  parse_state = _parser.getParseState();
 
+    switch (parse_state) {
+        case COMPLETE:
+            cleanUp();
+            processRequest();
+            break ;
+
+        case BAD_REQUEST:
+            handleParsingError();
+            break ;
+
+        case REQUEST_LINE_INCOMPLETE:
+        case HEADERS_INCOMPLETE:
+        case TRAILER_INCOMPLETE:
+            _progress = READ_CONTINUE;
+            break ;
+
+        default:
+            _progress = READ_CONTINUE;
+            break ;
+    }
+}
+
+void Connection::setServerData() {
+    if (!_config_ptr) return ;
+
+    std::string host = _request.getHeaderValue("Host");
+    if (host.empty())
+        host = "localhost";
+    
+    _server_ptr = _config_ptr->getMatchingServer(host);
+    if (!_server_ptr)
+        _server_ptr = _config_ptr->getDefaultServer();
+}
+
+void Connection::setLocationData() {
+    if (!_server_ptr) return ;
+
+    std::string uri = _request.getUrl();
+    _location_ptr = _server_ptr.getMatchingLocation(uri);
+    
+    if (!_location_ptr) {
+        _location_ptr = _server_ptr.getDefaultLocation();
+    }
+}
+
+void Connection::handleParsingError() {
+    int error_code = _request.getErrorCode();
+    if (error_code == 0) {
+        error_code = 400; // 기본 Bad Request
+    }
+    
+    prepareErrorResponse(error_code);
+    _progress = TO_CLIENT;
+}
+
+void Connection::prepareResponse() {
+    if (_request.hasError()) {
+        prepareErrorResponse(_request.getErrorCode());
+        return;
+    }
+    
+    // 정상 응답 준비
+    _response.setStatusCode(200);
+    _response.setHeader("Content-Type", "text/html");
+    _response.setBody("<html><body><h1>Hello World</h1></body></html>");
+    
+    _response_buf = _response.toString();
+}
+
+void Connection::prepareErrorResponse(int error_code) {
+    _response.setStatusCode(error_code);
+    _response.setHeader("Content-Type", "text/html");
+    
+    std::string error_body = "<html><body><h1>Error " + 
+                           std::to_string(error_code) + 
+                           "</h1></body></html>";
+    _response.setBody(error_body);
+    
+    _response_buf = _response.toString();
+}
+
+void Connection::cleanUp() {
+    if (_fd >= 0) {
+        close(_fd);
+        _fd = -1;
+    }
+    
+    _parser.getRawBuffer().clear();
+    _response_buf.clear();
+    _bytes_sent = 0;
+}
+
+void Connection::resetConnection() {
+    _request = Request();
+    _response = Response();
+    _parser = RequestParser();
+    _response_buf.clear();
+    _bytes_sent = 0;
+    _progress = READ_CONTINUE;
+}
 
 //ocf
 Connection::Connection() {}

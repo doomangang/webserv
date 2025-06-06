@@ -39,9 +39,9 @@ bool parseRawRequest(const std::string &raw_request, Request &req) {
         if (method_str.empty() || url_str.empty() || ver_str.empty())
             return false;
 
-        req.SetMethod(method_str);
-        req.SetUrl(url_str);
-        req.SetVersion(ver_str);
+        req.setMethod(method_str);
+        req.setUrl(url_str);
+        req.setVersion(ver_str);
     }
 
     // Header block
@@ -51,18 +51,18 @@ bool parseRawRequest(const std::string &raw_request, Request &req) {
         if (line.empty())
             break;
 
-        if (!req.ParseHeaderLine(line))
+        if (!req.parseHeaderLine(line))
             return false;
     }
 
 
     ssize_t content_len = 0;
-    if (req.HasHeader("content-length")) {
-        std::string val = req.GetHeaderValue("content-length");
+    if (req.hasHeader("content-length")) {
+        std::string val = req.getHeaderValue("content-length");
         content_len = std::atoi(val.c_str());
         if (content_len < 0) content_len = 0;
-        req.SetBytesToRead(content_len);
-        req.ReserveBody(content_len);  // 미리 reserve 해 두면 효율적
+        req.setBytesToRead(content_len);
+        req.reserveBody(content_len);  // 미리 reserve 해 두면 효율적
     }
 
     ssize_t remaining = content_len;
@@ -78,10 +78,10 @@ bool parseRawRequest(const std::string &raw_request, Request &req) {
         if (static_cast<ssize_t>(accumulated.size()) > content_len) {
             accumulated = accumulated.substr(0, content_len);
         }
-        req.SetBody(accumulated);
-        req.AddBodyPos(static_cast<size_t>(accumulated.size()));
+        req.setBody(accumulated);
+        req.addBodyPos(static_cast<size_t>(accumulated.size()));
     }
 
-    req.SetStatus(COMPLETE);
+    req.setStatus(COMPLETE);
     return true;
 }

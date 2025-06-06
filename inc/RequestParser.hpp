@@ -24,27 +24,38 @@ public:
     RequestParser();
     ~RequestParser();
 
-    /**
-     * @brief raw_request 전체 문자열을 파싱해서 Request 객체에 저장
-     * @param raw_request  소켓에서 읽어들인 HTTP 요청(바이트 그대로 모두 포함)
-     * @param req          파싱 결과를 저장할 Request 객체 (호출 전에 req.Cleaner() 권장)
-     * @return             헤더나 요청 줄 형식 오류가 있으면 false, 정상 파싱 시 true
-     */
-    static bool parseRawRequest(const std::string &raw_request, Request &req);
+    /* getter & setter */
+    Incomplete  getParseState() const;
+    std::string& getRawBuffer();
+
+    void        setMaxBodySize(size_t size);
+
+    /* state checker */
+    bool isRequestLineComplete() const;
+    bool isHeadersComplete() const;
+    bool isParsingComplete() const;
+    bool isBadRequest() const;
+
+    /* parse methods */
+    void parseRequestLine(Request& request);
+    void parseHeaders(Request& request);
+    void parseBody(Request& request);
 
 private:
-    std::string _raw_request;
+    Incomplete _parse_state;
+    size_t _max_body_size;
+    size_t _expected_body_size;
+    size_t _received_body_size;
+    size_t _header_end_pos;
+    std::string _raw_buffer;
 
+    Method  stringToMethod(const std::string& method_str);
+    bool    parseHeaderFields(const std::string&, Request& request);
+
+    //OCCF
     RequestParser(const RequestParser &copy);
     RequestParser& operator=(const RequestParser &rhs);
 
-    /**
-     * @brief "\r\n" (CRLF)를 기준으로 문자열을 잘라서
-     *        각 줄을 벡터에 담아 반환
-     * @param raw   원시 문자열
-     * @return      CRLF 단위로 나뉜 각 줄
-     */
-    static std::vector<std::string> splitByCRLF(const std::string &raw);
 };
 
 #endif // REQUESTPARSER_HPP

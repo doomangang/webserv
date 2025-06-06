@@ -96,6 +96,8 @@ public:
     const std::vector<Location>& getLocations() const;
     void setLocations(const std::vector<Location>& locations);
     void addLocation(const Location& loc);
+    Location      getMatchingLocation(std::string&)const;
+    Location      getDefaultLocation() const;
 
     ServerManager* getManager() const;
     void setManager(ServerManager* manager);

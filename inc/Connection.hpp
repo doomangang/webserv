@@ -3,7 +3,15 @@
 
 #include <iostream>
 #include <sys/socket.h>
+#include <unistd.h>
+#include <errno.h>
 #include "Enum.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
+#include "RequestParser.hpp"
+#include "Config.hpp"
+#include "Server.hpp"
+#include "Location.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -20,13 +28,36 @@
 class Connection {
 private:
     /* member attributes */
-    int         _fd;
-    timeval     _last_request_at;
-    std::string _client_ip;
-    int         _client_port;
-    std::string _raw_buffer;
-    Progress    _progress;
+    int             _fd;
+    //parser related
+    Request         _request;
+    Response        _response;
+    RequestParser   _parser;
+
+    Progress        _progress;
+    //response
+    std::string     _response_buf;
+    size_t          _bytes_sent;
+
+    timeval         _last_request_at;
+    std::string     _client_ip;
+    int             _client_port;
+    //config
+    Config*         _config_ptr;          
+    Server*         _server_ptr;
+    Location*       _location_ptr;
+
+    //Occf
     Connection();
+
+    void            setupServerAndLocation();
+    void            setServerData();
+    void            setLocationData();
+    void            updateProgress();
+    void            handleParsingError();
+    void            cleanUp();
+
+    void            resetConnection();
 
 public:
     /* Orthodox Canonical Form (OCF) */
@@ -40,9 +71,22 @@ public:
     timeval     getLastRequestAt() const;
     std::string getClientIp() const;
     int         getClientPort() const;
+    Progress    getProgress() const;
+
     void        setLastRequestAt(const timeval&);
+
+    bool        isComplete() const;
+    bool        needsRead()  const;
+    bool        needsWrite() const;
+
     /* additional methods */
     void        readClient();
+    void        writeClient();
+    void        processRequest();
+
+    void        prepareResponse();
+    void        prepareErrorResponse(int error_code);
+
     /* exception classes */
 };
 

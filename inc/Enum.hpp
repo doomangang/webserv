@@ -18,7 +18,7 @@ enum Progress {
     END_CONNECTION,
     READ_CONTINUE,
     COMBINE
-}
+};
 enum Incomplete {
     NONE,                    
     REQUEST_LINE_INCOMPLETE, 
