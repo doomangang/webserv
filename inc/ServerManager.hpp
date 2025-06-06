@@ -41,9 +41,13 @@ private:
                         _error_set,
                         _error_copy_set;
 
-    ServerManager();
-public:
+    std::unordered_map<int, Client> _clients_map;
+    std::unordered_map<int, Server> _servers_map;
+
+    
+    public:
     /* Orthodox Canonical Form (OCF) */
+    ServerManager();
     ServerManager(const Config&);
     ServerManager(const ServerManager& other);
     ~ServerManager();
@@ -60,11 +64,33 @@ public:
     // void    runServer();
     // void    exitServer(const std::string& msg);
 
-    // void    fdSet(int fd, SetType);
-    // void    fdZero(SetType);
-    // void    fdClear(int fd, SetType);
-    // bool    fdIsset(int fd, SetType) const;
-    // void    fdCopy(SetType origin, SetType copy);
+    bool    isValidConfigBlock(const std::string&);
+    bool    isValidServerBlock(const std::string&);
+    bool    isValidLocationBlock(const std::string&);
+
+    void    setupServers(std::vector<Server> servers);
+    void    setupServer(Server& server);
+    void    runServers();
+    void    runServer(Server& server);
+    void    exitServer(const std::string& msg);
+
+    void    fdSet(int fd, SetType);
+    void    fdZero(SetType);
+    void    fdClear(int fd, SetType);
+    bool    fdIsset(int fd, SetType) const;
+    void    fdCopy(SetType origin, SetType copy);
+    void    initializeSets();
+    void    acceptNewConnection(Server& server);
+    void    readRequest(int fd, Client& client);
+    void    sendCgiBody(Client& client, CgiHandler& cgi_obj);
+    void    readCgiResponse(Client& client, CgiHandler& cgi_obj);
+    void    sendResponse(int fd, Client& client);
+    void	removeFromSet(const int i, fd_set &set);
+    void    closeConnection(int fd);
+    void    checkTimeout();
+    void    addToSet(int fd, fd_set& set);
+
+
     /* exception classes */
 };
 
