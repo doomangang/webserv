@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <sys/socket.h>
+#include "Enum.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -24,6 +25,7 @@ private:
     std::string _client_ip;
     int         _client_port;
     std::string _raw_buffer;
+    Progress    _progress;
     Connection();
 
 public:

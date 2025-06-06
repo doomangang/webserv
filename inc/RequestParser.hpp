@@ -33,6 +33,8 @@ public:
     static bool parseRawRequest(const std::string &raw_request, Request &req);
 
 private:
+    std::string _raw_request;
+
     RequestParser(const RequestParser &copy);
     RequestParser& operator=(const RequestParser &rhs);
 
