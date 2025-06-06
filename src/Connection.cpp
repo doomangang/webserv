@@ -1,5 +1,25 @@
 #include "../inc/Connection.hpp"
 
+Connection::Connection() 
+    : _fd(-1), 
+      _progress(FROM_CLIENT),
+      _bytes_sent(0),
+      _client_port(0),
+      _config_ptr(NULL),
+      _server_ptr(NULL),
+      _location_ptr(NULL) {
+}
+
+Connection::Connection(int client_fd, const std::string& client_ip, int client_port)
+    : _fd(client_fd),
+      _progress(FROM_CLIENT),
+      _bytes_sent(0),
+      _client_ip(client_ip),
+      _client_port(client_port),
+      _config_ptr(NULL),
+      _server_ptr(NULL),
+      _location_ptr(NULL) {
+}
 
 // (초기 상태)  ──> [요청 줄 파싱 시도] ──> [헤더 파싱 시도] ──> [본문 파싱 시도] ──> [완료]
 // |                      |                     |
@@ -121,10 +141,10 @@ void Connection::setLocationData() {
     if (!_server_ptr) return ;
 
     std::string uri = _request.getUrl();
-    _location_ptr = _server_ptr.getMatchingLocation(uri);
+    _location_ptr = &(_server_ptr->getMatchingLocation(uri));
     
     if (!_location_ptr) {
-        _location_ptr = _server_ptr.getDefaultLocation();
+        _location_ptr = &(_server_ptr->getDefaultLocation());
     }
 }
 

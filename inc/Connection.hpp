@@ -5,11 +5,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sstream>
+#include "Config.hpp"
 #include "Enum.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "RequestParser.hpp"
-#include "Config.hpp"
 #include "Server.hpp"
 #include "Location.hpp"
 

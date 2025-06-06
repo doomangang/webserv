@@ -45,8 +45,8 @@ public:
     std::string getCgiVersion()     const;
     char**      getBaseEnv()        const;
     std::vector<Server> getServers()const;
-    Server      getMatchingServer(std::string&)const;
-    Server      getDefaultServer() const;
+    const Server* getMatchingServer(const std::string& host) const;
+    const Server* getDefaultServer() const;
     
     /* additional methods */
 

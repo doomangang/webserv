@@ -50,11 +50,14 @@ public:
     const std::string&   getUrl() const;
     const std::string&   getVersion() const;
     size_t               getBodyPos() const;
+    const std::string&   getBody() const;
     Incomplete           getStatus() const;
     ssize_t              getBytesToRead() const;
-    int                     
+    int                  getErrorCode() const;
 
     void                 setStatus(Incomplete type);
+    void                 setErrorCode(int code);
+    bool                 hasError() const;
     void                 addBodyPos(size_t n);
 
     void                 cleaner();
@@ -76,7 +79,7 @@ private:
     size_t               _body_pos;       // 본문에서 이미 처리된 위치
     Incomplete           _status;
     int                  _error_code;
-    ssize_t              bytes_to_read;  // 읽어야 할 남은 본문 바이트 수
+    ssize_t              _bytes_to_read;  // 읽어야 할 남은 본문 바이트 수
 };
 
 #endif

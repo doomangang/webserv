@@ -33,12 +33,11 @@ private:
     std::map<std::string, std::string> _headers;
     TransferType    _transfer_type;
     std::string     _content;
-    Response();
 
 public:
     /* Orthodox Canonical Form (OCF) */
-    Response(Connection*, int status_code, const std::string& body = "");
-    Response(const Response& other);
+    Response();
+    Response(Connection*, int status_code, const std::string& body = "");    Response(const Response& other);
     ~Response();
     Response& operator=(const Response& other);
 
@@ -50,10 +49,13 @@ public:
     TransferType                        getTransferType()       const;
     std::string                         getContent()            const;
     
+    void setStatusCode(int code);
+    void setHeader(const std::string& key, const std::string& value);
+    void setBody(const std::string& body);
     /* additional methods */
     void                                addHeader(const std::string& key, const std::string& value);
     void                                makeStatus(int code);
-    char*                               c_str()                 const;
+    std::string                         toString() const;
     /* exception classes */
 };
 

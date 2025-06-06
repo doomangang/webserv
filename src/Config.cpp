@@ -23,3 +23,23 @@ std::string Config::getHttpVersion() const { return _http_version; }
 std::string Config::getCgiVersion() const { return _cgi_version; }
 char**      Config::getBaseEnv() const { return _base_env; }
 std::vector<Server> Config::getServers() const { return _servers; }
+
+const Server* Config::getMatchingServer(std::string& host) const {
+    // Host 헤더로 서버 매칭
+    for (size_t i = 0; i < _servers.size(); ++i) {
+        std::vector<std::string> names = _servers[i].getServerNames();
+        for (size_t j = 0; j < names.size(); ++j) {
+            if (names[j] == host) {
+                return &_servers[i];
+            }
+        }
+    }
+    return getDefaultServer();
+}
+
+const Server* Config::getDefaultServer() const {
+    if (!_servers.empty()) {
+        return &_servers[0];
+    }
+    throw std::runtime_error("No servers configured");
+}
