@@ -182,39 +182,30 @@ void Server::setLocations(const std::vector<Location>& locations){ _locations = 
 ServerManager* Server::getManager() const { return _manager; }
 void Server::setManager(ServerManager* manager){ _manager = manager; }
 
-Location Server::getMatchingLocation(std::string& uri) const {
+const Location& Server::getMatchingLocation(std::string& uri) const {
     // 가장 긴 매칭 prefix 찾기
     size_t best_match_len = 0;
-    Location best_match;
+    size_t best_match_idx = 0;
     
     for (size_t i = 0; i < _locations.size(); ++i) {
         const std::string& loc_uri = _locations[i].getUri();
         if (uri.find(loc_uri) == 0 && loc_uri.length() > best_match_len) {
-            best_match = _locations[i];
+            best_match_idx = i;
             best_match_len = loc_uri.length();
         }
     }
     
     if (best_match_len > 0) {
-        return best_match;
+        return _locations[best_match_idx];
     }
     
     return getDefaultLocation();
 }
 
-Location Server::getDefaultLocation() const {
-    // "/" location 찾기
-    for (size_t i = 0; i < _locations.size(); ++i) {
-        if (_locations[i].getUri() == "/") {
-            return _locations[i];
-        }
+const Location& Server::getDefaultLocation() const {
+    // 기본 location 설정이 없으면 첫 번째 location을 사용
+    if (_locations.empty()) {
+        throw std::runtime_error("No locations configured");
     }
-    
-    // 없으면 첫 번째 location
-    if (!_locations.empty()) {
-        return _locations[0];
-    }
-    
-    // 빈 Location 반환
-    return Location();
+    return _locations[0];
 }

@@ -44,9 +44,9 @@ private:
     std::string     _client_ip;
     int             _client_port;
     //config
-    Config*         _config_ptr;          
-    Server*         _server_ptr;
-    Location*       _location_ptr;
+    const Config*   _config_ptr;          
+    const Server*   _server_ptr;
+    const Location* _location_ptr;
 
     //Occf
     Connection();

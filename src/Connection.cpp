@@ -1,24 +1,13 @@
 #include "../inc/Connection.hpp"
 
-Connection::Connection() 
-    : _fd(-1), 
-      _progress(FROM_CLIENT),
-      _bytes_sent(0),
-      _client_port(0),
-      _config_ptr(NULL),
-      _server_ptr(NULL),
-      _location_ptr(NULL) {
+Connection::Connection() : _fd(-1), _request(), _response(), _progress(FROM_CLIENT),
+    _bytes_sent(0), _client_port(0), _config_ptr(nullptr), _server_ptr(nullptr), _location_ptr(nullptr) {
 }
 
 Connection::Connection(int client_fd, const std::string& client_ip, int client_port)
-    : _fd(client_fd),
-      _progress(FROM_CLIENT),
-      _bytes_sent(0),
-      _client_ip(client_ip),
-      _client_port(client_port),
-      _config_ptr(NULL),
-      _server_ptr(NULL),
-      _location_ptr(NULL) {
+    : _fd(client_fd), _request(), _response(), _progress(FROM_CLIENT),
+    _bytes_sent(0), _client_ip(client_ip), _client_port(client_port),
+    _config_ptr(nullptr), _server_ptr(nullptr), _location_ptr(nullptr) {
 }
 
 // (초기 상태)  ──> [요청 줄 파싱 시도] ──> [헤더 파싱 시도] ──> [본문 파싱 시도] ──> [완료]
@@ -198,26 +187,68 @@ void Connection::cleanUp() {
 void Connection::resetConnection() {
     _request = Request();
     _response = Response();
-    _parser = RequestParser();
+    _parser.~RequestParser();  // 기존 객체 소멸
+    new (&_parser) RequestParser();  // 새 객체 생성
     _response_buf.clear();
     _bytes_sent = 0;
     _progress = READ_CONTINUE;
 }
 
-//ocf
-Connection::Connection() {}
-
-Connection::Connection(int client_fd, const std::string& client_ip, int client_port) {
-    (void)client_fd; (void)client_ip; (void)client_port;
-}
-
-Connection::Connection(const Connection& other) { *this = other; }
+Connection::Connection(const Connection& other) : _request(other._request) { *this = other; }
 
 Connection::~Connection() {}
 
 Connection& Connection::operator=(const Connection& other) {
     if (this != &other) {
-        this->_fd = other.getFd();
+        _fd = other.getFd();
+        _request = other._request;
+        _response = other._response;
+        _parser.~RequestParser();  // 기존 객체 소멸
+        new (&_parser) RequestParser();  // 새 객체 생성
+        _progress = other._progress;
+        _response_buf = other._response_buf;
+        _bytes_sent = other._bytes_sent;
+        _last_request_at = other._last_request_at;
+        _client_ip = other._client_ip;
+        _client_port = other._client_port;
+        _config_ptr = other._config_ptr;
+        _server_ptr = other._server_ptr;
+        _location_ptr = other._location_ptr;
     }
     return *this;
+}
+
+void Connection::processRequest() {
+    // 요청 처리 로직
+    if (_request.hasError()) {
+        prepareErrorResponse(_request.getErrorCode());
+        _progress = TO_CLIENT;
+        return;
+    }
+
+    // HTTP 메서드에 따른 처리
+    switch (_request.getMethod()) {
+        case GET:
+            // GET 요청 처리
+            prepareResponse();
+            break;
+        case POST:
+            // POST 요청 처리
+            prepareResponse();
+            break;
+        case DELETE:
+            // DELETE 요청 처리
+            prepareResponse();
+            break;
+        default:
+            // 지원하지 않는 메서드
+            prepareErrorResponse(405);  // Method Not Allowed
+            break;
+    }
+
+    _progress = TO_CLIENT;
+}
+
+int Connection::getFd() const {
+    return _fd;
 }

@@ -4,8 +4,6 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include "Connection.hpp"
-
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -19,6 +17,7 @@
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
 
+// 전방 선언
 class Connection;
 
 class Response {
@@ -37,7 +36,8 @@ private:
 public:
     /* Orthodox Canonical Form (OCF) */
     Response();
-    Response(Connection*, int status_code, const std::string& body = "");    Response(const Response& other);
+    Response(Connection*, int status_code, const std::string& body);
+    Response(const Response& other);
     ~Response();
     Response& operator=(const Response& other);
 

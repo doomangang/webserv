@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "Request.hpp"
+#include "Utils.hpp"
 #include "Enum.hpp"
 
 /* Color Sets */
@@ -52,8 +53,6 @@ private:
     size_t _header_end_pos;
     std::string _raw_buffer;
 
-    Method  stringToMethod(const std::string& method_str);
-    bool    parseHeaderFields(const std::string&, Request& request);
 
     //OCCF
     RequestParser(const RequestParser &copy);

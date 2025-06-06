@@ -4,8 +4,9 @@
 
 #include <string>
 #include <map>
+#include <algorithm>  // std::transform
 #include "Enum.hpp"
-#include "RequestParser.hpp"
+#include "Utils.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -19,11 +20,13 @@
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
 
+class RequestParser;
+
 class Request
 {
 public:
     // OCF
-    Request();
+    Request();  // 생성자에서 parser를 받음
     Request(const Request &copy);
     Request& operator=(const Request &rhs);
     ~Request();
@@ -37,6 +40,7 @@ public:
     bool                 hasHeader(const std::string &key) const;
     std::string          getHeaderValue(const std::string &key) const;
     const std::map<std::string, std::string>& GetAllHeaders() const;
+    void                 addHeader(const std::string &key, const std::string &value);
 
     //body
     void                 setBody(const std::string &body_str);
@@ -60,10 +64,11 @@ public:
     bool                 hasError() const;
     void                 addBodyPos(size_t n);
 
+    static Method  stringToMethod(const std::string& method_str);
+    static bool    parseHeaderFields(const std::string&, Request& request);
     void                 cleaner();
 
 private:
-    RequestParser        _parser;
     // member attributes
     Method               _method;
     std::string          _url;
