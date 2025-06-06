@@ -78,3 +78,9 @@ Utils& Utils::operator=(const Utils& other) {
     }
     return *this;
 }
+
+std::string Utils::toString(size_t value) {
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
+}

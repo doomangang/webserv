@@ -17,7 +17,8 @@ SRCS    = main.cpp \
 		Connection.cpp \
 		Request.cpp \
 		Response.cpp \
-		RequestParser.cpp \
+		ResponseWriter.cpp \
+		RequestParser.cpp 
 
 
 OBJS    = $(SRCS:.cpp=.o)

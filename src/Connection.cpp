@@ -1,24 +1,36 @@
 #include "../inc/Connection.hpp"
 
+#include "../inc/Connection.hpp"
+
 Connection::Connection() 
-    : _fd(-1),
-      _request(),
-      _response(),
+    : _fd(-1), 
+      _request(), 
       _parser(),
       _progress(FROM_CLIENT),
       _bytes_sent(0),
-      _client_port(0),
-      _config_ptr(NULL),
-      _server_ptr(NULL),
-      _location_ptr(NULL) {
+      _client_port(0), 
+      _config_ptr(NULL), 
+      _server_ptr(NULL), 
+      _location_ptr(NULL),
+      _response()      {
     timeval tv = {0, 0};
     _last_request_at = tv;
 }
 
 Connection::Connection(int client_fd, const std::string& client_ip, int client_port)
-    : _fd(client_fd), _request(), _response(), _progress(FROM_CLIENT),
-    _bytes_sent(0), _client_ip(client_ip), _client_port(client_port),
-    _config_ptr(nullptr), _server_ptr(nullptr), _location_ptr(nullptr) {
+    : _fd(client_fd), 
+      _request(), 
+      _parser(),
+      _progress(FROM_CLIENT),
+      _bytes_sent(0), 
+      _client_ip(client_ip), 
+      _client_port(client_port),
+      _config_ptr(NULL), 
+      _server_ptr(NULL),
+      _location_ptr(NULL),
+      _response() {
+    timeval tv = {0, 0};
+    _last_request_at = tv;
 }
 
 // (초기 상태)  ──> [요청 줄 파싱 시도] ──> [헤더 파싱 시도] ──> [본문 파싱 시도] ──> [완료]
@@ -98,6 +110,7 @@ void    Connection::setupServerAndLocation() {
 
     if (_server_ptr)
         _parser.setMaxBodySize(_server_ptr->getLimitClientBodySize());
+        _parser.setMaxHeaderSize(_server_ptr->getRequestHeaderLimitSize());
 }
 
 void    Connection::updateProgress() {
@@ -195,15 +208,6 @@ void Connection::cleanUp() {
     _bytes_sent = 0;
 }
 
-void Connection::resetConnection() {
-    _request = Request();
-    _response = Response();
-    _parser.~RequestParser();  // 기존 객체 소멸
-    new (&_parser) RequestParser();  // 새 객체 생성
-    _response_buf.clear();
-    _bytes_sent = 0;
-    _progress = READ_CONTINUE;
-}
 
 Connection::Connection(const Connection& other) : _request(other._request) { *this = other; }
 
@@ -231,21 +235,31 @@ Connection& Connection::operator=(const Connection& other) {
 
 // Connection.cpp - processRequest 메서드 확장
 void Connection::processRequest() {
+    // 요청 처리 로직
+    if (_request.hasError()) {
+        prepareErrorResponse(_request.getErrorCode());
+        _progress = TO_CLIENT;
+        return;
+    }
+
     // 1. 메서드 검증
     if (!isMethodAllowed()) {
         prepareErrorResponse(405);
+        _progress = TO_CLIENT;
         return;
     }
     
     // 2. 리다이렉트 체크
-    if (_location_ptr->hasRedirect()) {
+    if (_location_ptr && _location_ptr->hasRedirect()) {
         handleRedirect();
+        _progress = TO_CLIENT;
         return;
     }
     
     // 3. CGI 체크
     if (isCGIRequest()) {
         handleCGI();
+        _progress = TO_CLIENT;
         return;
     }
     
@@ -262,12 +276,60 @@ void Connection::processRequest() {
     } else {
         prepareErrorResponse(404);
     }
+
+    _progress = TO_CLIENT;
 }
 
-// 정적 파일 처리 예시
+// 새로 추가할 메서드들
+bool Connection::isMethodAllowed() const {
+    if (!_location_ptr) return false;
+    
+    std::set<Method> allowed = _location_ptr->getAllowMethods();
+    return allowed.find(_request.getMethod()) != allowed.end();
+}
+
+bool Connection::isCGIRequest() const {
+    if (!_location_ptr) return false;
+    
+    std::string path = _request.getPath();
+    size_t dot_pos = path.rfind('.');
+    if (dot_pos == std::string::npos) return false;
+    
+    std::string extension = path.substr(dot_pos);
+    std::set<std::string> cgi_exts = _location_ptr->getCgiExtensions();
+    
+    return cgi_exts.find(extension) != cgi_exts.end();
+}
+
+std::string Connection::resolveFilePath() const {
+    std::string path = _request.getPath();
+    std::string root = "";
+    
+    if (_location_ptr && !_location_ptr->getRootPath().empty()) {
+        root = _location_ptr->getRootPath();
+    } else if (_server_ptr && !_server_ptr->getRootPath().empty()) {
+        root = _server_ptr->getRootPath();
+    }
+    
+    // Remove location prefix from path
+    if (_location_ptr) {
+        std::string loc_uri = _location_ptr->getUri();
+        if (path.find(loc_uri) == 0) {
+            path = path.substr(loc_uri.length());
+        }
+    }
+    
+    // Ensure path starts with /
+    if (!path.empty() && path[0] != '/') {
+        path = "/" + path;
+    }
+    
+    return root + path;
+}
+
 void Connection::handleStaticFile() {
     std::string file_path = resolveFilePath();
-    std::ifstream file(file_path, std::ios::binary);
+    std::ifstream file(file_path.c_str(), std::ios::binary);
     
     if (!file) {
         prepareErrorResponse(404);
@@ -285,8 +347,8 @@ void Connection::handleStaticFile() {
     
     // Response 생성
     _response.setStatusCode(200);
-    _response.setHeader("Content-Type", Utils::getMimeType(file_path));
-    _response.setHeader("Content-Length", std::to_string(file_size));
+    _response.setHeader("Content-Type", getMimeType(file_path));
+    _response.setHeader("Content-Length", Utils::toString(file_size));
     _response.setBody(content);
     
     // Connection 헤더 처리
@@ -298,43 +360,90 @@ void Connection::handleStaticFile() {
     }
     
     _response_buf = _response.toString();
-    _progress = TO_CLIENT;
 }
 
-// Connection::writeClient 개선
+void Connection::handleDirectoryListing() {
+    // TODO: 디렉토리 리스팅 구현
+    prepareErrorResponse(403); // 일단 Forbidden
+}
+
+void Connection::handleCGI() {
+    // TODO: CGI 처리 구현
+    prepareErrorResponse(501); // Not Implemented
+}
+
+void Connection::handleRedirect() {
+    if (!_location_ptr) return;
+    
+    _response.setStatusCode(_location_ptr->getRedirectCode());
+    _response.setHeader("Location", _location_ptr->getRedirectUrl());
+    _response.setBody("");
+    
+    _response_buf = _response.toString();
+}
+
+std::string Connection::getMimeType(const std::string& path) {
+    size_t dot = path.rfind('.');
+    if (dot == std::string::npos) {
+        return "application/octet-stream";
+    }
+    
+    std::string ext = path.substr(dot + 1);
+    // C++98에서는 transform 사용
+    for (size_t i = 0; i < ext.length(); ++i) {
+        ext[i] = std::tolower(ext[i]);
+    }
+    
+    // C++98에서는 초기화 리스트 사용 불가, 수동으로 초기화
+    if (ext == "html" || ext == "htm") return "text/html";
+    if (ext == "css") return "text/css";
+    if (ext == "js") return "application/javascript";
+    if (ext == "json") return "application/json";
+    if (ext == "jpg" || ext == "jpeg") return "image/jpeg";
+    if (ext == "png") return "image/png";
+    if (ext == "gif") return "image/gif";
+    if (ext == "txt") return "text/plain";
+    if (ext == "pdf") return "application/pdf";
+    
+    return "application/octet-stream";
+}
+
 void Connection::writeClient() {
     if (_response_buf.empty()) {
         prepareResponse();
     }
     
-    // MSG_DONTWAIT 플래그로 비동기 전송
-    ssize_t sent = send(_fd, 
-                       _response_buf.c_str() + _bytes_sent,
-                       _response_buf.size() - _bytes_sent,
-                       MSG_DONTWAIT);
+    size_t to_send = _response_buf.size() - _bytes_sent;
+    ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
     
     if (sent > 0) {
         _bytes_sent += sent;
-        
         if (_bytes_sent >= _response_buf.size()) {
             // 전송 완료
-            if (_response.getHeader("Connection") == "close") {
+            std::string conn_header = _response.getHeaderValue("Connection");
+            if (conn_header == "close") {
                 _progress = END_CONNECTION;
             } else {
-                // Keep-alive: 연결 유지하고 다음 요청 대기
+                // keep-alive: 다음 요청 대기
                 resetConnection();
-                _progress = FROM_CLIENT;
             }
         }
-    } else if (sent == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // 버퍼가 가득 참 - 나중에 다시 시도
-            return;
+    } else if (sent < 0) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            _progress = END_CONNECTION;
         }
-        // 실제 에러 발생
-        _progress = END_CONNECTION;
     }
 }
+
+void Connection::resetConnection() {
+    _request.cleaner();
+    _response = Response();
+    _parser = RequestParser();
+    _response_buf.clear();
+    _bytes_sent = 0;
+    _progress = FROM_CLIENT;
+}
+
 
 int Connection::getFd() const {
     return _fd;
@@ -370,29 +479,4 @@ bool Connection::needsRead() const {
 
 bool Connection::needsWrite() const {
     return _progress == TO_CLIENT;
-}
-
-    if (_response_buf.empty()) {
-        prepareResponse();
-    }
-    
-    size_t to_send = _response_buf.size() - _bytes_sent;
-    ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
-    
-    if (sent > 0) {
-        _bytes_sent += sent;
-        if (_bytes_sent >= _response_buf.size()) {
-            // 전송 완료
-            if (_request.getHeaderValue("connection") == "close") {
-                _progress = END_CONNECTION;
-            } else {
-                // keep-alive: 다음 요청 대기
-                resetConnection();
-            }
-        }
-    } else if (sent < 0) {
-        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            _progress = END_CONNECTION;
-        }
-    }
 }

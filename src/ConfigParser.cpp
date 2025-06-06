@@ -238,7 +238,24 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
     }
 
     // 5) Split serverCore on ';' and parse each directive
+    // 기본값 설정
     Server srv;
+    srv.setHost("0.0.0.0");                    // 기본 호스트
+    srv.setPort(80);                           // 기본 포트
+    srv.setRequestUriLimitSize(8192);          // 8KB
+    srv.setRequestHeaderLimitSize(8192);       // 8KB
+    srv.setLimitClientBodySize(1048576);       // 1MB
+    srv.setAutoindex(false);                   // 기본적으로 비활성화
+    
+    // 기본 인덱스 파일
+    std::vector<std::string> defaultIndex;
+    defaultIndex.push_back("index.html");
+    defaultIndex.push_back("index.htm");
+    srv.setIndexFiles(defaultIndex);
+    
+    // 기본 에러 페이지
+    srv.setDefaultErrorPage("/errors/default.html");
+
     std::vector<std::string> stmts = Utils::splitBySemicolon(serverCore);
     for (size_t i = 0; i < stmts.size(); ++i) {
         std::string stmt = stmts[i];
@@ -311,6 +328,7 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
         srv.addLocation(loc);
     }
 
+    validateServerBlock(srv);
     return srv;
 }
 
@@ -322,6 +340,16 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
     Location loc;
     loc.setUri(uri);
 
+    // 기본값 설정
+    loc.setAutoindex(false);
+    
+    // 기본 메서드 설정
+    std::set<enum Method> defaultMethods;
+    defaultMethods.insert(GET);
+    defaultMethods.insert(POST);
+    defaultMethods.insert(DELETE);
+    loc.setAllowMethods(defaultMethods);
+    
     // 2) Extract body inside braces
     std::string body = extractBlockBody(locText);
 
@@ -464,3 +492,44 @@ void ConfigParser::parseUploadStoreDirective(Location& loc, const std::string& s
     loc.setUploadStore(up);
 }
 
+void ConfigParser::validatePort(int port) {
+    if (port < 1 || port > 65535) {
+        throw InvalidPortException(port);
+    }
+}
+
+void ConfigParser::validatePath(const std::string& path) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) {
+        throw InvalidPathException(path);
+    }
+}
+
+void ConfigParser::validateBodySize(size_t size) {
+    const size_t MAX_BODY_SIZE = 100 * 1024 * 1024; // 100MB
+    if (size > MAX_BODY_SIZE) {
+        throw std::runtime_error("client_max_body_size exceeds maximum allowed: " + 
+                               std::to_string(MAX_BODY_SIZE));
+    }
+}
+
+void ConfigParser::validateServerBlock(const Server& srv) {
+    // 필수 항목 체크
+    if (srv.getPort() == 0) {
+        throw MissingDirectiveException("listen");
+    }
+    validatePort(srv.getPort());
+    
+    if (srv.getRootPath().empty()) {
+        throw MissingDirectiveException("root");
+    }
+    validatePath(srv.getRootPath());
+    
+    // 각 location 검증
+    const std::vector<Location>& locations = srv.getLocations();
+    for (size_t i = 0; i < locations.size(); ++i) {
+        if (!locations[i].getRootPath().empty()) {
+            validatePath(locations[i].getRootPath());
+        }
+    }
+}

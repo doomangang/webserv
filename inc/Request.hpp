@@ -68,6 +68,12 @@ public:
     static bool    parseHeaderFields(const std::string&, Request& request);
     void                 cleaner();
 
+    void parseUri();
+    const std::string& getPath() const;
+    const std::string& getQueryString() const;
+    const std::string& getFragment() const;
+    std::string getQueryParam(const std::string& key) const;
+
 private:
     // member attributes
     Method               _method;
@@ -85,6 +91,14 @@ private:
     Incomplete           _status;
     int                  _error_code;
     ssize_t              _bytes_to_read;  // 읽어야 할 남은 본문 바이트 수
+
+    std::string _path;
+    std::string _query_string;
+    std::string _fragment;
+    std::map<std::string, std::string> _query_params;
+
+    std::string urlDecode(const std::string& str);
+    void parseQueryString();
 };
 
 #endif

@@ -8,8 +8,7 @@ Request::Request()
       _bytes_to_read(0) {
 }
 
-Request::~Request() {
-}
+Request::~Request() {}
 
 Request::Request(const Request& copy)
     : _method(copy._method),
@@ -127,6 +126,10 @@ int Request::getErrorCode() const {
     return _error_code;
 }
 
+const std::string& Request::getPath() const { return _path; }
+const std::string& Request::getQueryString() const { return _query_string; }
+const std::string& Request::getFragment() const { return _fragment; }
+
 void Request::setStatus(Incomplete type) {
     _status = type;
 }
@@ -186,4 +189,102 @@ bool Request::parseHeaderFields(const std::string& line, Request& request) {
     
     request.addHeader(key, value);
     return true;
+}
+
+// Request.cpp - parseUri 메서드 수정
+void Request::parseUri() {
+    // URL이 비어있으면 기본값 설정
+    if (_url.empty()) {
+        _path = "/";
+        return;
+    }
+    
+    std::string uri = _url;
+    
+    // 프래그먼트 추출 (#)
+    size_t fragment_pos = uri.find('#');
+    if (fragment_pos != std::string::npos) {
+        _fragment = uri.substr(fragment_pos + 1);
+        uri = uri.substr(0, fragment_pos);
+    }
+    
+    // 쿼리 스트링 추출 (?)
+    size_t query_pos = uri.find('?');
+    if (query_pos != std::string::npos) {
+        _query_string = uri.substr(query_pos + 1);
+        _path = uri.substr(0, query_pos);
+        
+        // 쿼리 파라미터 파싱 - C++98 방식
+        parseQueryString();
+    } else {
+        _path = uri;
+    }
+    
+    // 경로가 비어있으면 기본값
+    if (_path.empty()) {
+        _path = "/";
+    }
+}
+
+// 쿼리 스트링 파싱을 별도 메서드로 분리
+void Request::parseQueryString() {
+    if (_query_string.empty()) return;
+    
+    size_t start = 0;
+    size_t pos = 0;
+    
+    while (pos <= _query_string.length()) {
+        // '&' 또는 문자열 끝 찾기
+        if (pos == _query_string.length() || _query_string[pos] == '&') {
+            if (pos > start) {
+                std::string pair = _query_string.substr(start, pos - start);
+                
+                // '=' 위치 찾기
+                size_t eq_pos = pair.find('=');
+                if (eq_pos != std::string::npos) {
+                    std::string key = pair.substr(0, eq_pos);
+                    std::string value = pair.substr(eq_pos + 1);
+                    
+                    // URL 디코딩
+                    _query_params[urlDecode(key)] = urlDecode(value);
+                }
+            }
+            start = pos + 1;
+        }
+        pos++;
+    }
+}
+
+// URL 디코딩 헬퍼 함수
+std::string Request::urlDecode(const std::string& str) {
+    std::string result;
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] == '%' && i + 2 < str.length()) {
+            // 16진수 문자 2개를 숫자로 변환
+            std::string hex = str.substr(i + 1, 2);
+            char* end;
+            long value = std::strtol(hex.c_str(), &end, 16);
+            
+            if (end == hex.c_str() + 2) {  // 성공적으로 변환됨
+                result += static_cast<char>(value);
+                i += 2;
+            } else {
+                result += str[i];
+            }
+        } else if (str[i] == '+') {
+            result += ' ';
+        } else {
+            result += str[i];
+        }
+    }
+    return result;
+}
+
+// 쿼리 파라미터 getter
+std::string Request::getQueryParam(const std::string& key) const {
+    std::map<std::string, std::string>::const_iterator it = _query_params.find(key);
+    if (it != _query_params.end()) {
+        return it->second;
+    }
+    return "";
 }

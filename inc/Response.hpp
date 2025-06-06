@@ -48,6 +48,8 @@ public:
     std::map<std::string, std::string>  getHeaders()            const;
     TransferType                        getTransferType()       const;
     std::string                         getContent()            const;
+    std::string getHeaderValue(const std::string& key) const;
+
     
     void setStatusCode(int code);
     void setHeader(const std::string& key, const std::string& value);

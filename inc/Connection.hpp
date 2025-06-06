@@ -65,6 +65,11 @@ private:
     void handleCGI();
     void handleRedirect();
 
+    bool isMethodAllowed() const;
+    bool isCGIRequest() const;
+    std::string resolveFilePath() const;
+    std::string getMimeType(const std::string& file_path);
+
 public:
     /* Orthodox Canonical Form (OCF) */
     Connection();

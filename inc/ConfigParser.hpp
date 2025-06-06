@@ -53,6 +53,12 @@ private:
     void                        parseCgiDirective(Location& loc, const std::string& stmt);
     void                        parseUploadStoreDirective(Location& loc, const std::string& stmt);
     void                        parseReturnDirective(Location& loc, const std::string& stmt);
+
+    void validatePort(int port);
+    void validatePath(const std::string& path);
+    void validateBodySize(size_t size);
+    void validateServerBlock(const Server& srv);
+
 public:
     /* Orthodox Canonical Form (OCF) */
     ConfigParser();
@@ -75,6 +81,25 @@ public:
         public:
             ConfigReadException(const std::string& msg)
             : std::runtime_error("Config Read Error: " + msg) {}
+    };
+
+    class InvalidPortException : public std::runtime_error {
+    public:
+        InvalidPortException(int port) 
+            : std::runtime_error("Invalid port number: " + std::to_string(port) + 
+                               " (must be between 1-65535)") {}
+    };
+    
+    class InvalidPathException : public std::runtime_error {
+    public:
+        InvalidPathException(const std::string& path) 
+            : std::runtime_error("Invalid path: " + path + " (does not exist or not accessible)") {}
+    };
+    
+    class MissingDirectiveException : public std::runtime_error {
+    public:
+        MissingDirectiveException(const std::string& directive) 
+            : std::runtime_error("Missing required directive: " + directive) {}
     };
 };
 

@@ -125,6 +125,14 @@ std::string Response::getContent() const {
     return _content;
 }
 
+std::string Response::getHeaderValue(const std::string& key) const {
+    std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+    if (it != _headers.end()) {
+        return it->second;
+    }
+    return "";
+}
+
 void Response::addHeader(const std::string& key, const std::string& value) {
     _headers[key] = value;
 }

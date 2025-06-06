@@ -16,6 +16,8 @@ public:
     ResponseWriter();
     ResponseWriter(int fd);
     ~ResponseWriter();
+    ResponseWriter(const ResponseWriter &copy);
+    ResponseWriter& operator=(const ResponseWriter &rhs);
     
     void queueResponse(const Response& response);
     bool hasDataToSend() const;
