@@ -104,8 +104,10 @@ public:
 
 	
 	/* additional methods */
-	// bool    hasNewConnection() const;
-	// void    acceptNewConnection();
+	void   	setupServer();
+
+	bool    hasNewConnection() const;
+	void    acceptNewConnection();
 
 	// bool    hasRequest(int fd) const;
 	// Request recvRequest(int fd);
@@ -123,12 +125,11 @@ public:
 	// char**	createCGIEnv() const;
 	// void	executeCGI(const Request&);
 	
-	// void	createResponse(int status_code);
-	// bool	isSendable(int fd) const;
-	// void	sendResponse(const Response&);
-	// void	closeConnection(int fd);
-	// bool	hasException(int fd) const;
-	// void	run();
+	void	createResponse(int status_code);
+	bool	isSendable(int fd) const;
+	void	sendResponse(const Response&);
+	bool	hasException(int fd) const;
+	void	run();
 
 	/* exception classes */
 };
