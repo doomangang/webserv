@@ -4,9 +4,28 @@
 
 //OCF
 
-ServerManager::ServerManager() {}
+ServerManager::ServerManager() 
+    : _max_fd(0) {
+    FD_ZERO(&_read_set);
+    FD_ZERO(&_read_copy_set);
+    FD_ZERO(&_write_set);
+    FD_ZERO(&_write_copy_set);
+    FD_ZERO(&_error_set);
+    FD_ZERO(&_error_copy_set);
+}
 
-ServerManager::ServerManager(const Config& config) : _config(config){}
+ServerManager::ServerManager(const Config& config) 
+    : _config(config),
+      _max_fd(0) {
+    FD_ZERO(&_read_set);
+    FD_ZERO(&_read_copy_set);
+    FD_ZERO(&_write_set);
+    FD_ZERO(&_write_copy_set);
+    FD_ZERO(&_error_set);
+    FD_ZERO(&_error_copy_set);
+    
+    _servers = config.getServers();
+}
 
 ServerManager::ServerManager(const ServerManager& other) : _config(other._config){}
 
@@ -15,9 +34,23 @@ ServerManager::~ServerManager() {}
 ServerManager& ServerManager::operator=(const ServerManager& other) {
     if (this != &other) {
         _config = other._config;
+        _servers = other._servers;
+        _max_fd = other._max_fd;
+        _read_set = other._read_set;
+        _read_copy_set = other._read_copy_set;
+        _write_set = other._write_set;
+        _write_copy_set = other._write_copy_set;
+        _error_set = other._error_set;
+        _error_copy_set = other._error_copy_set;
     }
     return *this;
 }
+
+Config ServerManager::getConfig() const { return _config; }
+int     ServerManager::getMaxFd() const { return _max_fd; }
+void    ServerManager::setConfig(const Config& config) { _config = config; }
+void    ServerManager::setMaxFd(int max_fd) { _max_fd = max_fd; }
+
 
 void ServerManager::setupServers(std::vector<Server> servers)
 {

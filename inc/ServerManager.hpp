@@ -1,12 +1,27 @@
 #ifndef SERVERMANAGER_HPP
 #define SERVERMANAGER_HPP
 
-#include "Webserv.hpp"
-#include "Response.hpp"
-#include "Client.hpp"
+#include <iostream>
+#include <vector>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <fstream>
+#include "Server.hpp"
+#include "Config.hpp"
 
-// class Config;
-// class Server;
+/* Color Sets */
+#define RESET   "\033[0m"
+#define BLACK   "\033[30m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define MAGENTA "\033[35m"
+#define CYAN    "\033[36m"
+#define WHITE   "\033[37m"
+#define GREY    "\033[38;5;250m"
+
+class Server;
 
 class ServerManager {
 public:
@@ -45,12 +60,9 @@ private:
     void    setMaxFd(int);
 
     /* additional methods */
-    bool    splitConfigString(const std::string& src,
-                                std::string& config_block,
-                                std::vector<std::string>& server_strings);
-    bool    splitServerString(const std::string& src,
-                                std::string& server_block, 
-                                std::vector<std::string>& location_blocks);
+    // void    createServer();
+    // void    runServer();
+    // void    exitServer(const std::string& msg);
 
     bool    isValidConfigBlock(const std::string&);
     bool    isValidServerBlock(const std::string&);
