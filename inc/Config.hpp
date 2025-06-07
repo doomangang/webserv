@@ -1,10 +1,7 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include <iostream>
-#include <vector>
-#include "ConfigParser.hpp"
-#include "Server.hpp"
+#include "Webserv.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"

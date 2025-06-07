@@ -51,6 +51,13 @@
 # include "CgiHandler.hpp"
 // # include "Mime.hpp"
 # include "Logger.hpp"
+# include "ConfigParser.hpp"
+# include "Connection.hpp"
+# include "Enum.hpp"
+# include "RequestParser.hpp"
+# include "Response.hpp"
+# include "RequestParser.hpp"
+# include "Utils.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
