@@ -1,36 +1,5 @@
 #include "../inc/Connection.hpp"
 
-Connection::Connection() 
-    : _fd(-1), 
-      _request(), 
-      _parser(),
-      _progress(FROM_CLIENT),
-      _bytes_sent(0),
-      _client_port(0), 
-      _config_ptr(NULL), 
-      _server_ptr(NULL), 
-      _location_ptr(NULL),
-      _response()      {
-    timeval tv = {0, 0};
-    _last_request_at = tv;
-}
-
-Connection::Connection(int client_fd, const std::string& client_ip, int client_port)
-    : _fd(client_fd), 
-      _request(), 
-      _parser(),
-      _progress(FROM_CLIENT),
-      _bytes_sent(0), 
-      _client_ip(client_ip), 
-      _client_port(client_port),
-      _config_ptr(NULL), 
-      _server_ptr(NULL),
-      _location_ptr(NULL),
-      _response() {
-    timeval tv = {0, 0};
-    _last_request_at = tv;
-}
-
 // (초기 상태)  ──> [요청 줄 파싱 시도] ──> [헤더 파싱 시도] ──> [본문 파싱 시도] ──> [완료]
 // |                      |                     |
 // +-- 데이터 부족 ──> 대기/추가 recv() ──> 대기/추가 recv() ──> 응답 전송
@@ -90,13 +59,51 @@ void Connection::readClient() {
             }
         }
         
-        // 4. 전체 파싱 상태에 따른 진행 상태 업데이트
         updateProgress();
         
     } catch (const std::exception& e) {
         _request.setErrorCode(400);
         _progress = TO_CLIENT;
     }
+}
+
+void Connection::writeClient() {
+    if (_response_buf.empty()) {
+        prepareResponse();
+    }
+    
+    size_t to_send = _response_buf.size() - _bytes_sent;
+    ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
+    
+    if (sent > 0) {
+        _bytes_sent += sent;
+        if (_bytes_sent >= _response_buf.size()) {
+            // 전송 완료
+            std::string conn_header = _response.getHeaderValue("Connection");
+            if (conn_header == "close") {
+                _progress = END_CONNECTION;
+            } else {
+                // keep-alive: 다음 요청 대기
+                resetConnection();
+            }
+        }
+    } else if (sent < 0) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            _progress = END_CONNECTION;
+        }
+    }
+}
+
+bool Connection::needsRead() const {
+    return _progress == FROM_CLIENT || _progress == READ_CONTINUE;
+}
+
+bool Connection::needsWrite() const {
+    return _progress == TO_CLIENT;
+}
+
+bool Connection::isComplete() const {
+    return _progress == END_CONNECTION;
 }
 
 void    Connection::setupServerAndLocation() {
@@ -109,31 +116,6 @@ void    Connection::setupServerAndLocation() {
     if (_server_ptr)
         _parser.setMaxBodySize(_server_ptr->getLimitClientBodySize());
         _parser.setMaxHeaderSize(_server_ptr->getRequestHeaderLimitSize());
-}
-
-void    Connection::updateProgress() {
-    ParseState  parse_state = _parser.getParseState();
-
-    switch (parse_state) {
-        case COMPLETE:
-            cleanUp();
-            processRequest();
-            break ;
-
-        case BAD_REQUEST:
-            handleParsingError();
-            break ;
-
-        case REQUEST_LINE_INCOMPLETE:
-        case HEADERS_INCOMPLETE:
-        case TRAILER_INCOMPLETE:
-            _progress = READ_CONTINUE;
-            break ;
-
-        default:
-            _progress = READ_CONTINUE;
-            break ;
-    }
 }
 
 void Connection::setServerData() {
@@ -159,76 +141,29 @@ void Connection::setLocationData() {
     }
 }
 
-void Connection::handleParsingError() {
-    int error_code = _request.getErrorCode();
-    if (error_code == 0) {
-        error_code = 400; // 기본 Bad Request
+void    Connection::updateProgress() {
+    ParseState  parse_state = _parser.getParseState();
+
+    switch (parse_state) {
+        case COMPLETE:
+            cleanUp();
+            processRequest();
+            break ;
+
+        case BAD_REQUEST:
+            handleParsingError();
+            break ;
+
+        case REQUEST_LINE_INCOMPLETE:
+        case HEADERS_INCOMPLETE:
+        case TRAILER_INCOMPLETE:
+            _progress = READ_CONTINUE;
+            break ;
+
+        default:
+            _progress = READ_CONTINUE;
+            break ;
     }
-    
-    prepareErrorResponse(error_code);
-    _progress = TO_CLIENT;
-}
-
-void Connection::prepareResponse() {
-    if (_request.hasError()) {
-        prepareErrorResponse(_request.getErrorCode());
-        return;
-    }
-    
-    // 정상 응답 준비
-    _response.setStatusCode(200);
-    _response.setHeader("Content-Type", "text/html");
-    _response.setBody("<html><body><h1>Hello World</h1></body></html>");
-    
-    _response_buf = _response.toString();
-}
-
-void Connection::prepareErrorResponse(int error_code) {
-    _response.setStatusCode(error_code);
-    _response.setHeader("Content-Type", "text/html");
-    
-    std::string error_body = "<html><body><h1>Error " + 
-                           std::to_string(error_code) + 
-                           "</h1></body></html>";
-    _response.setBody(error_body);
-    
-    _response_buf = _response.toString();
-}
-
-void Connection::cleanUp() {
-    if (_fd >= 0) {
-        close(_fd);
-        _fd = -1;
-    }
-    
-    _parser.getRawBuffer().clear();
-    _response_buf.clear();
-    _bytes_sent = 0;
-}
-
-
-Connection::Connection(const Connection& other) : _request(other._request) { *this = other; }
-
-Connection::~Connection() {}
-
-Connection& Connection::operator=(const Connection& other) {
-    if (this != &other) {
-        _fd = other.getFd();
-        _request = other._request;
-        _response = other._response;
-        _parser.~RequestParser();  // 기존 객체 소멸
-        new (&_parser) RequestParser();  // 새 객체 생성
-        _progress = other._progress;
-        _response_buf = other._response_buf;
-        _bytes_sent = other._bytes_sent;
-        _last_request_at = other._last_request_at;
-        _client_ip = other._client_ip;
-        _client_port = other._client_port;
-        _config_ptr = other._config_ptr;
-        _server_ptr = other._server_ptr;
-        _location_ptr = other._location_ptr;
-    }
-    return *this;
 }
 
 void Connection::processRequest() {
@@ -277,7 +212,27 @@ void Connection::processRequest() {
     _progress = TO_CLIENT;
 }
 
-// 새로 추가할 메서드들
+void Connection::handleParsingError() {
+    int error_code = _request.getErrorCode();
+    if (error_code == 0) {
+        error_code = 400; // 기본 Bad Request
+    }
+    
+    prepareErrorResponse(error_code);
+    _progress = TO_CLIENT;
+}
+
+void Connection::cleanUp() {
+    if (_fd >= 0) {
+        close(_fd);
+        _fd = -1;
+    }
+    
+    _parser.getRawBuffer().clear();
+    _response_buf.clear();
+    _bytes_sent = 0;
+}
+
 bool Connection::isMethodAllowed() const {
     if (!_location_ptr) return false;
     
@@ -298,30 +253,19 @@ bool Connection::isCGIRequest() const {
     return cgi_exts.find(extension) != cgi_exts.end();
 }
 
-std::string Connection::resolveFilePath() const {
-    std::string path = _request.getPath();
-    std::string root = "";
+void Connection::handleCGI() {
+    // TODO: CGI 처리 구현
+    prepareErrorResponse(501); // Not Implemented
+}
+
+void Connection::handleRedirect() {
+    if (!_location_ptr) return;
     
-    if (_location_ptr && !_location_ptr->getRootPath().empty()) {
-        root = _location_ptr->getRootPath();
-    } else if (_server_ptr && !_server_ptr->getRootPath().empty()) {
-        root = _server_ptr->getRootPath();
-    }
+    _response.setStatusCode(_location_ptr->getRedirectCode());
+    _response.setHeader("Location", _location_ptr->getRedirectUrl());
+    _response.setBody("");
     
-    // Remove location prefix from path
-    if (_location_ptr) {
-        std::string loc_uri = _location_ptr->getUri();
-        if (path.find(loc_uri) == 0) {
-            path = path.substr(loc_uri.length());
-        }
-    }
-    
-    // Ensure path starts with /
-    if (!path.empty() && path[0] != '/') {
-        path = "/" + path;
-    }
-    
-    return root + path;
+    _response_buf = _response.toString();
 }
 
 void Connection::handleStaticFile() {
@@ -364,48 +308,18 @@ void Connection::handleDirectoryListing() {
     prepareErrorResponse(403); // 일단 Forbidden
 }
 
-void Connection::handleCGI() {
-    // TODO: CGI 처리 구현
-    prepareErrorResponse(501); // Not Implemented
-}
-
-void Connection::handleRedirect() {
-    if (!_location_ptr) return;
+void Connection::prepareResponse() {
+    if (_request.hasError()) {
+        prepareErrorResponse(_request.getErrorCode());
+        return;
+    }
     
-    _response.setStatusCode(_location_ptr->getRedirectCode());
-    _response.setHeader("Location", _location_ptr->getRedirectUrl());
-    _response.setBody("");
+    // 정상 응답 준비
+    _response.setStatusCode(200);
+    _response.setHeader("Content-Type", "text/html");
+    _response.setBody("<html><body><h1>Hello World</h1></body></html>");
     
     _response_buf = _response.toString();
-}
-
-
-
-void Connection::writeClient() {
-    if (_response_buf.empty()) {
-        prepareResponse();
-    }
-    
-    size_t to_send = _response_buf.size() - _bytes_sent;
-    ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
-    
-    if (sent > 0) {
-        _bytes_sent += sent;
-        if (_bytes_sent >= _response_buf.size()) {
-            // 전송 완료
-            std::string conn_header = _response.getHeaderValue("Connection");
-            if (conn_header == "close") {
-                _progress = END_CONNECTION;
-            } else {
-                // keep-alive: 다음 요청 대기
-                resetConnection();
-            }
-        }
-    } else if (sent < 0) {
-        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            _progress = END_CONNECTION;
-        }
-    }
 }
 
 void Connection::resetConnection() {
@@ -417,39 +331,66 @@ void Connection::resetConnection() {
     _progress = FROM_CLIENT;
 }
 
-
-int Connection::getFd() const {
-    return _fd;
+void Connection::prepareErrorResponse(int error_code) {
+    _response.setStatusCode(error_code);
+    _response.setHeader("Content-Type", "text/html");
+    
+    std::string error_body = "<html><body><h1>Error " + 
+                           std::to_string(error_code) + 
+                           "</h1></body></html>";
+    _response.setBody(error_body);
+    
+    _response_buf = _response.toString();
 }
 
-timeval Connection::getLastRequestAt() const {
-    return _last_request_at;
+std::string Connection::resolveFilePath() const {
+    std::string path = _request.getPath();
+    std::string root = "";
+    
+    if (_location_ptr && !_location_ptr->getRootPath().empty()) {
+        root = _location_ptr->getRootPath();
+    } else if (_server_ptr && !_server_ptr->getRootPath().empty()) {
+        root = _server_ptr->getRootPath();
+    }
+    
+    // Remove location prefix from path
+    if (_location_ptr) {
+        std::string loc_uri = _location_ptr->getUri();
+        if (path.find(loc_uri) == 0) {
+            path = path.substr(loc_uri.length());
+        }
+    }
+    
+    // Ensure path starts with /
+    if (!path.empty() && path[0] != '/') {
+        path = "/" + path;
+    }
+    
+    return root + path;
 }
 
-std::string Connection::getClientIp() const {
-    return _client_ip;
-}
 
-int Connection::getClientPort() const {
-    return _client_port;
-}
+int                         Connection::getFd() const                                     { return _fd; }
+const std::string&          Connection::getClientIp() const                               { return _client_ip; }
+int                         Connection::getClientPort() const                             { return _client_port; }
 
-Progress Connection::getProgress() const {
-    return _progress;
-}
+int                         Connection::getClientSocket() const                           { return _client_socket; }
+const struct sockaddr_in&   Connection::getClientAddress() const                          { return _client_address; }
+void                        Connection::setClientSocket(int sock)                         { _client_socket = sock; }
+void                        Connection::setClientAddress(const struct sockaddr_in& addr)  { _client_address = addr; }
+void                        Connection::setFd(int fd)                                       { _fd = fd; }
+void                        Connection::setLastRequestAt(const time_t& tv)                  { _last_request_at = tv; }
+void                        Connection::setIp(const std::string& ip)                      { _client_ip = ip; }
+void                        Connection::setPort(int port)                                   { _client_port = port; }
+void                        Connection::setLastRequestAt()                                  { _last_request_at = std::time(nullptr); }
 
-void Connection::setLastRequestAt(const timeval& tv) {
-    _last_request_at = tv;
-}
+const std::string&          Connection::getCgiInputBuffer() const                        { return _cgi_Input_Buffer; }
+void                        Connection::setCgiInputBuffer(const std::string& buf)         { _cgi_Input_Buffer = buf; }
+const std::string&          Connection::getCgiOutputBuffer() const                       { return _cgi_Output_Buffer; }
+void                        Connection::setCgiOutputBuffer(const std::string& buf)        { _cgi_Output_Buffer = buf; }
 
-bool Connection::isComplete() const {
-    return _progress == END_CONNECTION;
-}
+const std::string&          Connection::getRequestBuffer() const                         { return _request_Buffer; }
+void                        Connection::setRequestBuffer(const std::string& buf)          { _request_Buffer = buf; }
 
-bool Connection::needsRead() const {
-    return _progress == FROM_CLIENT || _progress == READ_CONTINUE;
-}
-
-bool Connection::needsWrite() const {
-    return _progress == TO_CLIENT;
-}
+const Server&               Connection::getServer() const                                { return _server; }
+void                        Connection::setServer(const Server& server)                  { _server = server; }

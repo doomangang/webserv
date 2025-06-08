@@ -27,29 +27,59 @@ public:
 	bool						needsWrite() const;
 	bool						isComplete() const;
 
-	// 실행부
-	Response					response;          // 클라이언트에 대한 응답 객체
-	std::string         		cgiInputBuffer;    // CGI 입력 버퍼
-	std::string         		cgiOutputBuffer;   // CGI 출력 버퍼
-	std::string         		requestBuffer;     // 클라이언트 요청 버퍼
-	Request             		request;           // 요청 객체
-	Server              		server;            // 서버 정보
+	void 						setServerData();
+	void 						setLocationData();
+	void 						setupServerAndLocation();
+
+	/* request handling */
+
+	void						updateProgress();
+	void						processRequest();
+	void						handleParsingError();
+	void						cleanUp();
+
+	bool						isMethodAllowed() const;
+	bool						isCGIRequest() const;
+	void						handleStaticFile();
+	void						handleDirectoryListing();
+	void						handleCGI();
+	void						handleRedirect();
+
+	/* response handling */
+	void						prepareResponse();
+	void						prepareErrorResponse(int error_code);
+	void						resetConnection();
 
 	/* I/O accessors */
 	int							getFd() const;
 	const std::string& 			getClientIp() const;
 	int         				getClientPort() const;
 
-	// Getter/Setter from Client
-	int							getClientSocket() const;
-	const struct sockaddr_in&   getClientAddress() const;
-	void						setClientSocket(int sock);
-	void						setClientAddress(const struct sockaddr_in& addr);
 	void						setFd(int fd);
 	void						setLastRequestAt(const time_t& tv);
 	void						setIp(const std::string& ip);
 	void						setPort(int port);
 	void						setLastRequestAt(); // now()
+
+	// Getter/Setter from Client
+	int							getClientSocket() const;
+	const struct sockaddr_in&   getClientAddress() const;
+	void						setClientSocket(int sock);
+	void						setClientAddress(const struct sockaddr_in& addr);
+	
+	// CGI buffers
+    const std::string&          getCgiInputBuffer() const;
+    void                        setCgiInputBuffer(const std::string& buf);
+    const std::string&          getCgiOutputBuffer() const;
+    void                        setCgiOutputBuffer(const std::string& buf);
+
+    // Request buffer
+    const std::string&          getRequestBuffer() const;
+    void                        setRequestBuffer(const std::string& buf);
+
+    // Server info
+    const Server&               getServer() const;
+    void                        setServer(const Server& server);
 
 private:
 	/* connection state */
@@ -57,6 +87,7 @@ private:
 	std::string 				_client_ip;
 	int         				_client_port;
 	time_t      				_last_request_at;
+	ConnectionState 			_progress;
 
 	/* parsing & request */
 	RequestParser 				_parser;
@@ -75,6 +106,10 @@ private:
 	// 실행부 멤버 from Client
 	int                 		_client_socket;
 	struct sockaddr_in  		_client_address;
+	std::string         		_cgi_Input_Buffer;    // CGI 입력 버퍼
+	std::string         		_cgi_Output_Buffer;   // CGI 출력 버퍼
+	std::string         		_request_Buffer;     // 클라이언트 요청 버퍼
+	Server              		_server;            // 서버 정보
 };
 
 #endif
