@@ -1,7 +1,5 @@
 #include "../inc/Connection.hpp"
 
-#include "../inc/Connection.hpp"
-
 Connection::Connection() 
     : _fd(-1), 
       _request(), 
@@ -114,7 +112,7 @@ void    Connection::setupServerAndLocation() {
 }
 
 void    Connection::updateProgress() {
-    Incomplete  parse_state = _parser.getParseState();
+    ParseState  parse_state = _parser.getParseState();
 
     switch (parse_state) {
         case COMPLETE:
@@ -233,7 +231,6 @@ Connection& Connection::operator=(const Connection& other) {
     return *this;
 }
 
-// Connection.cpp - processRequest 메서드 확장
 void Connection::processRequest() {
     // 요청 처리 로직
     if (_request.hasError()) {
@@ -382,31 +379,7 @@ void Connection::handleRedirect() {
     _response_buf = _response.toString();
 }
 
-std::string Connection::getMimeType(const std::string& path) {
-    size_t dot = path.rfind('.');
-    if (dot == std::string::npos) {
-        return "application/octet-stream";
-    }
-    
-    std::string ext = path.substr(dot + 1);
-    // C++98에서는 transform 사용
-    for (size_t i = 0; i < ext.length(); ++i) {
-        ext[i] = std::tolower(ext[i]);
-    }
-    
-    // C++98에서는 초기화 리스트 사용 불가, 수동으로 초기화
-    if (ext == "html" || ext == "htm") return "text/html";
-    if (ext == "css") return "text/css";
-    if (ext == "js") return "application/javascript";
-    if (ext == "json") return "application/json";
-    if (ext == "jpg" || ext == "jpeg") return "image/jpeg";
-    if (ext == "png") return "image/png";
-    if (ext == "gif") return "image/gif";
-    if (ext == "txt") return "text/plain";
-    if (ext == "pdf") return "application/pdf";
-    
-    return "application/octet-stream";
-}
+
 
 void Connection::writeClient() {
     if (_response_buf.empty()) {

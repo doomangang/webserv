@@ -1,14 +1,7 @@
-// Location.hpp
-
 #ifndef LOCATION_HPP
 #define LOCATION_HPP
 
-#include <iostream>
-#include <set>
-#include <map>
-#include <vector>
-#include <string>
-#include "Enum.hpp"
+#include "Webserv.hpp"
 
 class Location {
 private:
@@ -71,4 +64,4 @@ public:
 
 /* operators */
 
-#endif  // LOCATION_HPP
+#endif

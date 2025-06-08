@@ -2,15 +2,6 @@
 #define SERVERMANAGER_HPP
 
 #include "Webserv.hpp"
-#include "Response.hpp"
-#include "Client.hpp"
-#include <iostream>
-#include <vector>
-#include <sys/stat.h>
-#include <sys/select.h>
-#include <fstream>
-#include "Server.hpp"
-#include "Config.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"

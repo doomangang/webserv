@@ -2,8 +2,7 @@
 #ifndef RESPONSEWRITER_HPP
 #define RESPONSEWRITER_HPP
 
-#include "Response.hpp"
-#include <queue>
+#include "Webserv.hpp"
 
 class ResponseWriter {
 private:

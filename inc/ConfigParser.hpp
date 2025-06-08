@@ -1,20 +1,6 @@
 #ifndef CONFIGPARSER_HPP
 #define CONFIGPARSER_HPP
 
-// #include <iostream>
-// #include <fstream>
-// #include <sstream>
-// #include <cctype>
-// #include <cstdlib>
-// #include <stdexcept>
-// #include <vector>
-// #include <sys/stat.h>
-// #include <sys/select.h>
-// #include "Server.hpp"
-// #include "Config.hpp"
-// #include "Utils.hpp"
-// #include "Location.hpp"
-
 #include "Webserv.hpp"
 
 /* Color Sets */

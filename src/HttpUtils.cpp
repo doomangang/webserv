@@ -143,34 +143,42 @@ void HttpUtils::getStatusPhrase(int code) {
     }
 }
 
-
-std::string HttpUtils::getMimeType(const std::string& extension) {
-    static std::map<std::string, std::string> mime_types;
+std::string HttpUtils::getMimeType(const std::string& path) {
+    size_t dot = path.rfind('.');
+    if (dot == std::string::npos) {
+        return "application/octet-stream";
+    }
     
-    // static 초기화를 한 번만 수행
-    static bool initialized = false;
-    if (!initialized) {
-        mime_types["html"] = "text/html";
-        mime_types["htm"] = "text/html";
-        mime_types["css"] = "text/css";
-        mime_types["js"] = "application/javascript";
-        mime_types["json"] = "application/json";
-        mime_types["jpg"] = "image/jpeg";
-        mime_types["jpeg"] = "image/jpeg";
-        mime_types["png"] = "image/png";
-        mime_types["gif"] = "image/gif";
-        mime_types["txt"] = "text/plain";
-        mime_types["pdf"] = "application/pdf";
-        initialized = true;
-    }
+    std::string ext = path.substr(dot + 1);
 
-    std::map<std::string, std::string>::const_iterator it = mime_types.find(extension);
-    if (it != mime_types.end()) {
-        return it->second;
+    for (size_t i = 0; i < ext.length(); ++i) {
+        ext[i] = std::tolower(ext[i]);
     }
+    
+    if (ext == "html" || ext == "htm") return "text/html";
+    if (ext == "css") return "text/css";
+    if (ext == "js") return "application/javascript";
+    if (ext == "json") return "application/json";
+    if (ext == "jpg" || ext == "jpeg") return "image/jpeg";
+    if (ext == "png") return "image/png";
+    if (ext == "gif") return "image/gif";
+    if (ext == "txt") return "text/plain";
+    if (ext == "pdf") return "application/pdf";
+    
     return "application/octet-stream";
 }
 
+//실행부 함수
+
+std::string Server::getErrorPage(int code) const {
+    std::map<int, std::string>::const_iterator it = _error_pages.find(code);
+    if (it != _error_pages.end()) {
+        return it->second;
+    }
+    return _default_error_page; 
+}
+
+// OCF (Orthodox Canonical Form) 생성자
 HttpUtils::HttpUtils() {}
 HttpUtils::HttpUtils(const HttpUtils& other) {
     *this = other;
@@ -181,10 +189,4 @@ HttpUtils& HttpUtils::operator=(const HttpUtils& other) {
         (void)other;
     }
     return *this;
-}
-
-std::string HttpUtils::getMimeType(size_t value) {
-    std::stringstream ss;
-    ss << value;
-    return ss.str();
 }

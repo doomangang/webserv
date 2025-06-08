@@ -3,13 +3,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <map>
-#include <set>
-#include <string>
-#include "Location.hpp"
+#include "Webserv.hpp"
 
 class ServerManager;
 class Config;
@@ -34,8 +28,8 @@ private:
     std::map<int, std::string>  _error_pages;
     Config*                     _config;
     std::vector<Location>       _locations;
-    // std::map<int, Connection>   _connections;
-    // std::queue<Response>        _responses;
+    std::map<int, Connection>   _connections;
+    std::queue<Response>        _responses;
 
 public:
     /* Orthodox Canonical Form (OCF) */
@@ -109,21 +103,21 @@ public:
 	bool    hasNewConnection() const;
 	void    acceptNewConnection();
 
-	// bool    hasRequest(int fd) const;
-	// Request recvRequest(int fd);
-	// void    solveRequest(const Request&);
+	bool    hasRequest(int fd) const;
+	Request recvRequest(int fd);
+	void    solveRequest(const Request&);
 
-	// void    executeAutoindex(const Request&);
-	// void    executeGet(const Request&);
-	// void    executeHead(const Request&);
-	// void	executePut(const Request&);
-	// void	executePost(const Request&);
-	// void	executeDelete(const Request&);
-	// void	executeOptions(const Request&);
-	// void	executeTrace(const Request&);
+	void    executeAutoindex(const Request&);
+	void    executeGet(const Request&);
+	void    executeHead(const Request&);
+	void	executePut(const Request&);
+	void	executePost(const Request&);
+	void	executeDelete(const Request&);
+	void	executeOptions(const Request&);
+	void	executeTrace(const Request&);
 
-	// char**	createCGIEnv() const;
-	// void	executeCGI(const Request&);
+	char**	createCGIEnv() const;
+	void	executeCGI(const Request&);
 	
 	void	createResponse(int status_code);
 	bool	isSendable(int fd) const;

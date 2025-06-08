@@ -29,12 +29,15 @@ enum ConnectionState {
 };
 
 enum ParseState {
-    READ_STARTLINE,
-	READ_HEADER,
-	READ_BODY,
-	READ_TRAILER,
-	READ_DONE,
-	BAD_REQUEST
+    NONE,                    
+    REQUEST_LINE_INCOMPLETE, 
+    REQUEST_LINE_COMPLETE,
+    HEADERS_INCOMPLETE,      
+    HEADERS_COMPLETE,      
+    BODY_INCOMPLETE,
+    TRAILER_INCOMPLETE,        
+    COMPLETE,           
+    BAD_REQUEST  
 };
 
 #endif

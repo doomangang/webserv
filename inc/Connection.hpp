@@ -77,4 +77,4 @@ private:
 	struct sockaddr_in  		_client_address;
 };
 
-#endif // CONNECTION_HPP
+#endif
