@@ -1,21 +1,6 @@
 #include "../inc/RequestParser.hpp"
 
 // 마지막에 남는 조각도 lines.back()에 들어갈 수 있다
-static std::vector<std::string> splitByCRLF(const std::string &raw) {
-    std::vector<std::string> lines;
-    size_t start = 0;
-
-    while (start < raw.size()) {
-        size_t pos = raw.find("\r\n", start);
-        if (pos == std::string::npos) {
-            lines.push_back(raw.substr(start));
-            break;
-        }
-        lines.push_back(raw.substr(start, pos - start));
-        start = pos + 2;
-    }
-    return lines;
-}
 
 RequestParser::RequestParser() 
     :   _parse_state(NONE),
@@ -64,7 +49,7 @@ std::string& RequestParser::getRawBuffer() {
     return _raw_buffer;
 }
 
-Incomplete RequestParser::getParseState() const {
+ParseState RequestParser::getParseState() const {
     return _parse_state;
 }
 
@@ -92,7 +77,7 @@ void RequestParser::parseRequestLine(Request& request) {
     }
 
     std::string line = _raw_buffer.substr(0, pos);
-    std::vector<std::string> parts = Utils::splitWords(line);
+    std::vector<std::string> parts = HttpUtils::splitWords(line);
     
     if (parts.size() != 3) {
         _parse_state = BAD_REQUEST;
@@ -261,7 +246,7 @@ void RequestParser::parseChunkedBody(Request& request) {
             }
         }
         else if (_chunk_state == CHUNK_TRAILER) {
-            // 트레일러 헤더 처리 (선택적)
+            // 트레일러 헤더 처리
             size_t pos = _raw_buffer.find("\r\n\r\n");
             if (pos != std::string::npos) {
                 _raw_buffer.erase(0, pos + 4);
@@ -313,7 +298,7 @@ bool parseRawRequest(const std::string &raw_request, Request &req) {
     // request line
     {
         std::string start_line = lines[0];
-        Utils::trim(start_line);
+        HttpUtils::trim(start_line);
         // METHOD SP URI SP VERSION
         size_t p1 = start_line.find(' ');
         if (p1 == std::string::npos) return false;

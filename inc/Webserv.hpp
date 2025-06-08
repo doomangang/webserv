@@ -53,7 +53,7 @@
 # include "Logger.hpp"
 # include "ConfigParser.hpp"
 # include "Connection.hpp"
-# include "Enum.hpp"
+# include "HttpTypes.hpp"
 # include "RequestParser.hpp"
 # include "Response.hpp"
 # include "RequestParser.hpp"

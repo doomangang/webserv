@@ -150,7 +150,7 @@ std::string ConfigParser::preprocessConfig(std::string raw) {
         if (pos != std::string::npos)
             line.erase(pos);
 
-        Utils::trim(line);
+        HttpUtils::trim(line);
         if (!line.empty()) {
             cleaned += line;
             cleaned += '\n';
@@ -226,7 +226,7 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
         std::istringstream iss(serverCore);
         std::string line;
         while (std::getline(iss, line)) {
-            Utils::trim(line);
+            HttpUtils::trim(line);
             if (line.empty()) continue;
             // If line begins a nested block (unlikely after removal), skip
             if (line.find("location") == 0 && line.find('{') != std::string::npos)
@@ -256,16 +256,16 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
     // 기본 에러 페이지
     srv.setDefaultErrorPage("/errors/default.html");
 
-    std::vector<std::string> stmts = Utils::splitBySemicolon(serverCore);
+    std::vector<std::string> stmts = HttpUtils::splitBySemicolon(serverCore);
     for (size_t i = 0; i < stmts.size(); ++i) {
         std::string stmt = stmts[i];
-        Utils::trim(stmt);
+        HttpUtils::trim(stmt);
         if (stmt.empty()) continue;
 
         if (stmt.find("listen ") == 0) {
             // "listen host:port" or "listen port"
             std::string args = stmt.substr(7);
-            Utils::trim(args);
+            HttpUtils::trim(args);
             size_t colon = args.find(':');
             if (colon != std::string::npos) {
                 srv.setHost(args.substr(0, colon));
@@ -278,29 +278,29 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
         }
         else if (stmt.find("server_name ") == 0) {
             // e.g. "server_name a.com b.com"
-            std::vector<std::string> names = Utils::splitWords(stmt.substr(12));
+            std::vector<std::string> names = HttpUtils::splitWords(stmt.substr(12));
             srv.setServerNames(names);
         }
         else if (stmt.find("root ") == 0) {
             // e.g. "root /var/www"
             std::string path = stmt.substr(5);
-            Utils::trim(path);
+            HttpUtils::trim(path);
             srv.setRootPath(path);
         }
         else if (stmt.find("index ") == 0) {
             // e.g. "index index.html index.htm"
-            std::vector<std::string> files = Utils::splitWords(stmt.substr(6));
+            std::vector<std::string> files = HttpUtils::splitWords(stmt.substr(6));
             srv.setIndexFiles(files);
         }
         else if (stmt.find("client_max_body_size ") == 0) {
             // e.g. "client_max_body_size 1000000"
             std::string num = stmt.substr(22);
-            Utils::trim(num);
+            HttpUtils::trim(num);
             srv.setLimitClientBodySize(static_cast<size_t>(std::atoi(num.c_str())));
         }
         else if (stmt.find("error_page ") == 0) {
             // e.g. "error_page 404 /404.html"
-            std::vector<std::string> parts = Utils::splitWords(stmt.substr(11));
+            std::vector<std::string> parts = HttpUtils::splitWords(stmt.substr(11));
             if (parts.size() >= 2) {
                 int code = std::atoi(parts[0].c_str());
                 std::string path = parts[1];
@@ -310,13 +310,13 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
         else if (stmt.find("autoindex ") == 0) {
             // e.g. "autoindex on"/"autoindex off"
             std::string onoff = stmt.substr(10);
-            Utils::trim(onoff);
+            HttpUtils::trim(onoff);
             srv.setAutoindex(onoff == "on");
         }
         else if (stmt.find("upload_store ") == 0) {
             // e.g. "upload_store /tmp/uploads"
             std::string up = stmt.substr(13);
-            Utils::trim(up);
+            HttpUtils::trim(up);
             srv.setUploadStore(up);
         }
         // unknown server-level directives are ignored
@@ -359,7 +359,7 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
     // 4) Parse each statement
     for (size_t i = 0; i < stmts.size(); ++i) {
         std::string stmt = stmts[i];
-        Utils::trim(stmt);
+        HttpUtils::trim(stmt);
         if (stmt.empty()) continue;
 
         if (stmt.find("methods ") == 0) {
@@ -405,13 +405,13 @@ std::string ConfigParser::extractLocationUri(const std::string& text) {
     if (open == std::string::npos)
         throw std::runtime_error("Invalid location block: no '{'");
     std::string header = text.substr(0, open);
-    Utils::trim(header);
+    HttpUtils::trim(header);
     // header: "location <uri>"
     size_t sp = header.find(' ');
     if (sp == std::string::npos)
         throw std::runtime_error("Invalid location header: " + header);
     std::string uri = header.substr(sp + 1);
-    Utils::trim(uri);
+    HttpUtils::trim(uri);
     return uri;
 }
 
@@ -424,14 +424,14 @@ std::string ConfigParser::extractBlockBody(const std::string& text) {
 }
 
 std::vector<std::string> ConfigParser::splitStatements(const std::string& body) {
-    return Utils::splitBySemicolon(body);
+    return HttpUtils::splitBySemicolon(body);
 }
 
 void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt) {
     // "methods GET POST DELETE"
     loc.clearAllowMethods();
 
-    std::vector<std::string> words = Utils::splitWords(stmt.substr(8));
+    std::vector<std::string> words = HttpUtils::splitWords(stmt.substr(8));
     std::set<std::string> methods(words.begin(), words.end());
     for (size_t i = 0; i < words.size(); ++i) {
         const std::string& w = words[i];
@@ -445,7 +445,7 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
 
 void ConfigParser::parseReturnDirective(Location& loc, const std::string& stmt) {
     // "return 301 http://..."
-    std::vector<std::string> parts = Utils::splitWords(stmt.substr(7));
+    std::vector<std::string> parts = HttpUtils::splitWords(stmt.substr(7));
     if (parts.size() >= 2) {
         int code = std::atoi(parts[0].c_str());
         std::string url = parts[1];
@@ -460,26 +460,26 @@ void ConfigParser::parseReturnDirective(Location& loc, const std::string& stmt) 
 void ConfigParser::parseRootDirective(Location& loc, const std::string& stmt) {
     // "root /some/path"
     std::string path = stmt.substr(5);
-    Utils::trim(path);
+    HttpUtils::trim(path);
     loc.setRootPath(path);
 }
 
 void ConfigParser::parseIndexDirective(Location& loc, const std::string& stmt) {
     // "index index.html index.htm"
-    std::vector<std::string> files = Utils::splitWords(stmt.substr(6));
+    std::vector<std::string> files = HttpUtils::splitWords(stmt.substr(6));
     loc.setIndexFiles(files);
 }
 
 void ConfigParser::parseAutoindexDirective(Location& loc, const std::string& stmt) {
     // "autoindex on" or "autoindex off"
     std::string onoff = stmt.substr(10);
-    Utils::trim(onoff);
+    HttpUtils::trim(onoff);
     loc.setAutoindex(onoff == "on");
 }
 
 void ConfigParser::parseCgiDirective(Location& loc, const std::string& stmt) {
     // "cgi .php .py"
-    std::vector<std::string> exts = Utils::splitWords(stmt.substr(4));
+    std::vector<std::string> exts = HttpUtils::splitWords(stmt.substr(4));
     std::set<std::string> s(exts.begin(), exts.end());
     loc.setCgiExtensions(s);
 }
@@ -487,7 +487,7 @@ void ConfigParser::parseCgiDirective(Location& loc, const std::string& stmt) {
 void ConfigParser::parseUploadStoreDirective(Location& loc, const std::string& stmt) {
     // "upload_store /tmp/uploads"
     std::string up = stmt.substr(13);
-    Utils::trim(up);
+    HttpUtils::trim(up);
     loc.setHasUploadStore(true);
     loc.setUploadStore(up);
 }

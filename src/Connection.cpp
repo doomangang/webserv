@@ -348,7 +348,7 @@ void Connection::handleStaticFile() {
     // Response 생성
     _response.setStatusCode(200);
     _response.setHeader("Content-Type", getMimeType(file_path));
-    _response.setHeader("Content-Length", Utils::toString(file_size));
+    _response.setHeader("Content-Length", HttpUtils::getMimeType(file_size));
     _response.setBody(content);
     
     // Connection 헤더 처리

@@ -204,32 +204,6 @@ void Response::setBody(const std::string& body) {
     _headers["Content-Length"] = std::to_string(body.size());
 }
 
-void Response::makeStatus(int code) {
-    _status_code = code;
-    switch (code) {
-        case 200: _status_description = "OK"; break;
-        case 201: _status_description = "Created"; break;
-        case 204: _status_description = "No Content"; break;
-        case 301: _status_description = "Moved Permanently"; break;
-        case 302: _status_description = "Found"; break;
-        case 400: _status_description = "Bad Request"; break;
-        case 401: _status_description = "Unauthorized"; break;
-        case 403: _status_description = "Forbidden"; break;
-        case 404: _status_description = "Not Found"; break;
-        case 405: _status_description = "Method Not Allowed"; break;
-        case 408: _status_description = "Request Timeout"; break;
-        case 413: _status_description = "Payload Too Large"; break;
-        case 414: _status_description = "URI Too Long"; break;
-        case 500: _status_description = "Internal Server Error"; break;
-        case 501: _status_description = "Not Implemented"; break;
-        case 502: _status_description = "Bad Gateway"; break;
-        case 503: _status_description = "Service Unavailable"; break;
-        case 504: _status_description = "Gateway Timeout"; break;
-        case 505: _status_description = "HTTP Version Not Supported"; break;
-        default:  _status_description = "Unknown"; break;
-    }
-}
-
 std::string Response::toString() const {
     std::ostringstream oss;
     

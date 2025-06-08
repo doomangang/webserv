@@ -2,77 +2,50 @@
 #ifndef REQUESTPARSER_HPP
 #define REQUESTPARSER_HPP
 
-#include <string>
-#include <vector>
-#include "Request.hpp"
-#include "Utils.hpp"
-#include "Enum.hpp"
-
-/* Color Sets */
-#define RESET   "\033[0m"
-#define BLACK   "\033[30m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define MAGENTA "\033[35m"
-#define CYAN    "\033[36m"
-#define WHITE   "\033[37m"
-#define GREY    "\033[38;5;250m"
+#include "Webserv.hpp"
 
 class Request;
 
-class RequestParser
-{
+class RequestParser {
 public:
+    /* Orthodox Canonical Form */
     RequestParser();
+    RequestParser(const RequestParser& other);
     ~RequestParser();
-    RequestParser(const RequestParser &copy);
-    RequestParser& operator=(const RequestParser &rhs);
+    RequestParser& operator=(const RequestParser& other);
 
-    /* getter & setter */
-    Incomplete  getParseState() const;
-    std::string& getRawBuffer();
+    /* parse steps */
+    void        parseRequestLine(Request& request);
+    void        parseHeaders(Request& request);
+    void        parseBody(Request& request);
 
+    /* configure limits */
     void        setMaxBodySize(size_t size);
     void        setMaxHeaderSize(size_t size);
 
-    /* state checker */
-    bool isRequestLineComplete() const;
-    bool isHeadersComplete() const;
-    bool isParsingComplete() const;
-    bool isBadRequest() const;
-    bool isChunked() const;
+    /* parsing status */
+    bool        isRequestLineComplete() const;
+    bool        isHeadersComplete()     const;
+    bool        isParsingComplete()     const;
+    bool        isBadRequest()          const;
+    ParseState  getParseState()         const;
 
-    /* parse methods */
-    void parseRequestLine(Request& request);
-    void parseHeaders(Request& request);
-    void parseBody(Request& request);
-    void parseChunkedBody(Request& request);
-    bool parseChunkSize(const std::string& line);
+    /* raw buffer access */
+    std::string& getRawBuffer();
 
-    void reset();
+    /* reset for next request */
+    void        reset();
 
 private:
-    Incomplete _parse_state;
-    size_t _max_body_size;
-    size_t _max_header_size;
-    size_t _expected_body_size;
-    size_t _received_body_size;
-    size_t _header_end_pos;
+    ParseState  _parse_state;
+    size_t      _max_body_size;
+    size_t      _max_header_size;
     std::string _raw_buffer;
 
-    bool _is_chunked;
-    size_t _current_chunk_size;
-    size_t _current_chunk_received;
-    enum ChunkState {
-        CHUNK_SIZE,
-        CHUNK_DATA,
-        CHUNK_TRAILER
-    } _chunk_state;
-
-    void validateHeaderValues(Request& request);
-
+    TransferType _is_chunked;
+    size_t      _expected_body_size;
+    size_t      _received_body_size;
+    size_t      _header_end_pos;
 };
 
 #endif // REQUESTPARSER_HPP

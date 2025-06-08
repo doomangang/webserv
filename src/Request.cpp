@@ -111,7 +111,7 @@ const std::string& Request::getBody() const {
     return _body;
 }
 
-Incomplete Request::getStatus() const {
+ParseState Request::getStatus() const {
     return _status;
 }
 
@@ -130,7 +130,7 @@ const std::string& Request::getPath() const { return _path; }
 const std::string& Request::getQueryString() const { return _query_string; }
 const std::string& Request::getFragment() const { return _fragment; }
 
-void Request::setStatus(Incomplete type) {
+void Request::setStatus(ParseState type) {
     _status = type;
 }
 
@@ -184,8 +184,8 @@ bool Request::parseHeaderFields(const std::string& line, Request& request) {
     std::string value = line.substr(colon_pos + 1);
     
     // 공백 제거
-    Utils::trim(key);
-    Utils::trim(value);
+    HttpUtils::trim(key);
+    HttpUtils::trim(value);
     
     request.addHeader(key, value);
     return true;
@@ -214,7 +214,7 @@ void Request::parseUri() {
         _query_string = uri.substr(query_pos + 1);
         _path = uri.substr(0, query_pos);
         
-        // 쿼리 파라미터 파싱 - C++98 방식
+        // 쿼리 파라미터 파싱
         parseQueryString();
     } else {
         _path = uri;
@@ -253,31 +253,6 @@ void Request::parseQueryString() {
         }
         pos++;
     }
-}
-
-// URL 디코딩 헬퍼 함수
-std::string Request::urlDecode(const std::string& str) {
-    std::string result;
-    for (size_t i = 0; i < str.length(); ++i) {
-        if (str[i] == '%' && i + 2 < str.length()) {
-            // 16진수 문자 2개를 숫자로 변환
-            std::string hex = str.substr(i + 1, 2);
-            char* end;
-            long value = std::strtol(hex.c_str(), &end, 16);
-            
-            if (end == hex.c_str() + 2) {  // 성공적으로 변환됨
-                result += static_cast<char>(value);
-                i += 2;
-            } else {
-                result += str[i];
-            }
-        } else if (str[i] == '+') {
-            result += ' ';
-        } else {
-            result += str[i];
-        }
-    }
-    return result;
 }
 
 // 쿼리 파라미터 getter

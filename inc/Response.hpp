@@ -1,9 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#include <iostream>
-#include <map>
-#include <vector>
+#include "Webserv.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
@@ -25,8 +23,6 @@ class Response {
     // static     Mime _mime;
     Response();
     Response(Request&);
-public:
-    enum TransferType { GENERAL, CHUNKED };
 private:
     /* member attributes */
     static std::map<int, std::vector<std::string> > status;
