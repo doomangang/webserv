@@ -10,6 +10,7 @@
 #include <set>
 #include <string>
 #include "Location.hpp"
+#include "Connection.hpp"
 
 class ServerManager;
 class Config;
@@ -112,7 +113,7 @@ public:
     void setHasUploadStore(bool has);
     void setUploadStore(const std::string& path);
 
-    std::string getDefaultErrorPage() const;
+    // std::string getDefaultErrorPage() const;
     void setDefaultErrorPage(const std::string& page);
 
     void addErrorPage(int code, const std::string& path);
