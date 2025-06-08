@@ -8,6 +8,7 @@
 #include <fstream>
 #include "Server.hpp"
 #include "Config.hpp"
+#include "Client.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
