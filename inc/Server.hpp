@@ -4,9 +4,19 @@
 #define SERVER_HPP
 
 #include "Webserv.hpp"
+#include "ServerManager.hpp"
+#include "Config.hpp"
+#include "Location.hpp"
+#include "Connection.hpp"
+#include "Response.hpp"
+#include "Request.hpp"
 
 class ServerManager;
 class Config;
+class Location;
+class Connection;
+class Response;
+class Request;
 
 class Server {
 private:

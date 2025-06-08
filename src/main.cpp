@@ -1,5 +1,6 @@
 #include "../inc/Webserv.hpp"
 #include "../inc/ServerManager.hpp"
+#include "../inc/ConfigParser.hpp"
 
 void sigpipeHandle(int sig) { if(sig) {}}
 

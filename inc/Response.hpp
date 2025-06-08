@@ -2,27 +2,13 @@
 #define RESPONSE_HPP
 
 #include "Webserv.hpp"
+#include "Connection.hpp"
+#include "CgiHandler.hpp"
 
-/* Color Sets */
-#define RESET   "\033[0m"
-#define BLACK   "\033[30m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define MAGENTA "\033[35m"
-#define CYAN    "\033[36m"
-#define WHITE   "\033[37m"
-#define GREY    "\033[38;5;250m"
-
-// 전방 선언
 class Connection;
+class CgiHandler;
 
 class Response {
-    public:
-    // static     Mime _mime;
-    Response();
-    Response(Request&);
 private:
     /* member attributes */
     static std::map<int, std::vector<std::string> > status;
@@ -62,7 +48,7 @@ public:
 
     Request     request;
 private:
-    Server    _server;
+    // Server          _server;
     std::string     _target_file;
     std::vector<uint8_t> _body;
     size_t          _body_length;

@@ -67,32 +67,32 @@ void Connection::readClient() {
     }
 }
 
-void Connection::writeClient() {
-    if (_response_buf.empty()) {
-        prepareResponse();
-    }
+// void Connection::writeClient() {
+//     if (_response_buf.empty()) {
+//         prepareResponse();
+//     }
     
-    size_t to_send = _response_buf.size() - _bytes_sent;
-    ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
+//     size_t to_send = _response_buf.size() - _bytes_sent;
+//     ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
     
-    if (sent > 0) {
-        _bytes_sent += sent;
-        if (_bytes_sent >= _response_buf.size()) {
-            // 전송 완료
-            std::string conn_header = _response.getHeaderValue("Connection");
-            if (conn_header == "close") {
-                _progress = END_CONNECTION;
-            } else {
-                // keep-alive: 다음 요청 대기
-                resetConnection();
-            }
-        }
-    } else if (sent < 0) {
-        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            _progress = END_CONNECTION;
-        }
-    }
-}
+//     if (sent > 0) {
+//         _bytes_sent += sent;
+//         if (_bytes_sent >= _response_buf.size()) {
+//             // 전송 완료
+//             std::string conn_header = _response.getHeaderValue("Connection");
+//             if (conn_header == "close") {
+//                 _progress = END_CONNECTION;
+//             } else {
+//                 // keep-alive: 다음 요청 대기
+//                 resetConnection();
+//             }
+//         }
+//     } else if (sent < 0) {
+//         if (errno != EAGAIN && errno != EWOULDBLOCK) {
+//             _progress = END_CONNECTION;
+//         }
+//     }
+// }
 
 bool Connection::needsRead() const {
     return _progress == FROM_CLIENT || _progress == READ_CONTINUE;
@@ -229,7 +229,7 @@ void Connection::cleanUp() {
     }
     
     _parser.getRawBuffer().clear();
-    _response_buf.clear();
+    // _response_buf.clear();
     _bytes_sent = 0;
 }
 
@@ -258,90 +258,90 @@ void Connection::handleCGI() {
     prepareErrorResponse(501); // Not Implemented
 }
 
-void Connection::handleRedirect() {
-    if (!_location_ptr) return;
+// void Connection::handleRedirect() {
+//     if (!_location_ptr) return;
     
-    _response.setStatusCode(_location_ptr->getRedirectCode());
-    _response.setHeader("Location", _location_ptr->getRedirectUrl());
-    _response.setBody("");
+//     _response.setStatusCode(_location_ptr->getRedirectCode());
+//     _response.setHeader("Location", _location_ptr->getRedirectUrl());
+//     _response.setBody("");
     
-    _response_buf = _response.toString();
-}
+//     _response_buf = _response.toString();
+// }
 
-void Connection::handleStaticFile() {
-    std::string file_path = resolveFilePath();
-    std::ifstream file(file_path.c_str(), std::ios::binary);
+// void Connection::handleStaticFile() {
+//     std::string file_path = resolveFilePath();
+//     std::ifstream file(file_path.c_str(), std::ios::binary);
     
-    if (!file) {
-        prepareErrorResponse(404);
-        return;
-    }
+//     if (!file) {
+//         prepareErrorResponse(404);
+//         return;
+//     }
     
-    // 파일 크기 확인
-    file.seekg(0, std::ios::end);
-    size_t file_size = file.tellg();
-    file.seekg(0, std::ios::beg);
+//     // 파일 크기 확인
+//     file.seekg(0, std::ios::end);
+//     size_t file_size = file.tellg();
+//     file.seekg(0, std::ios::beg);
     
-    // 파일 내용 읽기
-    std::string content(file_size, '\0');
-    file.read(&content[0], file_size);
+//     // 파일 내용 읽기
+//     std::string content(file_size, '\0');
+//     file.read(&content[0], file_size);
     
-    // Response 생성
-    _response.setStatusCode(200);
-    _response.setHeader("Content-Type", getMimeType(file_path));
-    _response.setHeader("Content-Length", HttpUtils::getMimeType(file_size));
-    _response.setBody(content);
+//     // Response 생성
+//     _response.setStatusCode(200);
+//     _response.setHeader("Content-Type", HttpUtils::getMimeType(file_path));
+//     _response.setHeader("Content-Length", HttpUtils::getMimeType(file_size));
+//     _response.setBody(content);
     
-    // Connection 헤더 처리
-    std::string connection = _request.getHeaderValue("connection");
-    if (connection == "close") {
-        _response.setHeader("Connection", "close");
-    } else {
-        _response.setHeader("Connection", "keep-alive");
-    }
+//     // Connection 헤더 처리
+//     std::string connection = _request.getHeaderValue("connection");
+//     if (connection == "close") {
+//         _response.setHeader("Connection", "close");
+//     } else {
+//         _response.setHeader("Connection", "keep-alive");
+//     }
     
-    _response_buf = _response.toString();
-}
+//     _response_buf = _response.toString();
+// }
 
-void Connection::handleDirectoryListing() {
-    // TODO: 디렉토리 리스팅 구현
-    prepareErrorResponse(403); // 일단 Forbidden
-}
+// void Connection::handleDirectoryListing() {
+//     // TODO: 디렉토리 리스팅 구현
+//     prepareErrorResponse(403); // 일단 Forbidden
+// }
 
-void Connection::prepareResponse() {
-    if (_request.hasError()) {
-        prepareErrorResponse(_request.getErrorCode());
-        return;
-    }
+// void Connection::prepareResponse() {
+//     if (_request.hasError()) {
+//         prepareErrorResponse(_request.getErrorCode());
+//         return;
+//     }
     
-    // 정상 응답 준비
-    _response.setStatusCode(200);
-    _response.setHeader("Content-Type", "text/html");
-    _response.setBody("<html><body><h1>Hello World</h1></body></html>");
+//     // 정상 응답 준비
+//     _response.setStatusCode(200);
+//     _response.setHeader("Content-Type", "text/html");
+//     _response.setBody("<html><body><h1>Hello World</h1></body></html>");
     
-    _response_buf = _response.toString();
-}
+//     _response_buf = _response.toString();
+// }
 
-void Connection::resetConnection() {
-    _request.cleaner();
-    _response = Response();
-    _parser = RequestParser();
-    _response_buf.clear();
-    _bytes_sent = 0;
-    _progress = FROM_CLIENT;
-}
+// void Connection::resetConnection() {
+//     _request.cleaner();
+//     _response = Response();
+//     _parser = RequestParser();
+//     _response_buf.clear();
+//     _bytes_sent = 0;
+//     _progress = FROM_CLIENT;
+// }
 
-void Connection::prepareErrorResponse(int error_code) {
-    _response.setStatusCode(error_code);
-    _response.setHeader("Content-Type", "text/html");
+// void Connection::prepareErrorResponse(int error_code) {
+//     _response.setStatusCode(error_code);
+//     _response.setHeader("Content-Type", "text/html");
     
-    std::string error_body = "<html><body><h1>Error " + 
-                           std::to_string(error_code) + 
-                           "</h1></body></html>";
-    _response.setBody(error_body);
+//     std::string error_body = "<html><body><h1>Error " + 
+//                            HttpUtils::toString(error_code) + 
+//                            "</h1></body></html>";
+//     _response.setBody(error_body);
     
-    _response_buf = _response.toString();
-}
+//     _response_buf = _response.toString();
+// }
 
 std::string Connection::resolveFilePath() const {
     std::string path = _request.getPath();
@@ -392,5 +392,5 @@ void                        Connection::setCgiOutputBuffer(const std::string& bu
 const std::string&          Connection::getRequestBuffer() const                         { return _request_Buffer; }
 void                        Connection::setRequestBuffer(const std::string& buf)          { _request_Buffer = buf; }
 
-const Server&               Connection::getServer() const                                { return _server; }
-void                        Connection::setServer(const Server& server)                  { _server = server; }
+// const Server&               Connection::getServer() const                                { return _server; }
+// void                        Connection::setServer(const Server& server)                  { _server = server; }

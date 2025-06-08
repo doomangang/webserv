@@ -23,8 +23,8 @@ std::vector<std::string> HttpUtils::split(const std::string& str, char delimiter
         result.push_back(item);
     }
 
-    if (!parts.empty() && parts.back().empty())
-        parts.pop_back();
+    if (!result.empty() && result.back().empty())
+        result.pop_back();
 
     return result;
 }
@@ -54,7 +54,7 @@ std::vector<std::string> HttpUtils::splitWords(const std::string& s) {
     return words;
 }
 
-static std::vector<std::string> HttpUtils::splitByCRLF(const std::string &raw) {
+std::vector<std::string> HttpUtils::splitByCRLF(const std::string &raw) {
     std::vector<std::string> lines;
     size_t start = 0;
 
@@ -76,6 +76,13 @@ std::string HttpUtils::toLowerCase(const std::string& str) {
         result[i] = std::tolower(result[i]);
     }
     return result;
+}
+
+Method HttpUtils::stringToMethod(const std::string& method_str) {
+    if (method_str == "GET") return GET;
+    if (method_str == "POST") return POST;
+    if (method_str == "DELETE") return DELETE;
+    return UNKNOWN_METHOD;
 }
 
 std::string HttpUtils::urlDecode(const std::string& str) {
@@ -117,29 +124,28 @@ std::string HttpUtils::urlEncode(const std::string& str) {
     return result;
 }
 
-void HttpUtils::getStatusPhrase(int code) {
-    _status_code = code;
+std::string HttpUtils::getStatusPhrase(int code) {
     switch (code) {
-        case 200: _status_description = "OK"; break;
-        case 201: _status_description = "Created"; break;
-        case 204: _status_description = "No Content"; break;
-        case 301: _status_description = "Moved Permanently"; break;
-        case 302: _status_description = "Found"; break;
-        case 400: _status_description = "Bad Request"; break;
-        case 401: _status_description = "Unauthorized"; break;
-        case 403: _status_description = "Forbidden"; break;
-        case 404: _status_description = "Not Found"; break;
-        case 405: _status_description = "Method Not Allowed"; break;
-        case 408: _status_description = "Request Timeout"; break;
-        case 413: _status_description = "Payload Too Large"; break;
-        case 414: _status_description = "URI Too Long"; break;
-        case 500: _status_description = "Internal Server Error"; break;
-        case 501: _status_description = "Not Implemented"; break;
-        case 502: _status_description = "Bad Gateway"; break;
-        case 503: _status_description = "Service Unavailable"; break;
-        case 504: _status_description = "Gateway Timeout"; break;
-        case 505: _status_description = "HTTP Version Not Supported"; break;
-        default:  _status_description = "Unknown"; break;
+        case 200: return "OK"; break;
+        case 201: return "Created"; break;
+        case 204: return "No Content"; break;
+        case 301: return "Moved Permanently"; break;
+        case 302: return "Found"; break;
+        case 400: return "Bad Request"; break;
+        case 401: return "Unauthorized"; break;
+        case 403: return "Forbidden"; break;
+        case 404: return "Not Found"; break;
+        case 405: return "Method Not Allowed"; break;
+        case 408: return "Request Timeout"; break;
+        case 413: return "Payload Too Large"; break;
+        case 414: return "URI Too Long"; break;
+        case 500: return "Internal Server Error"; break;
+        case 501: return "Not Implemented"; break;
+        case 502: return "Bad Gateway"; break;
+        case 503: return "Service Unavailable"; break;
+        case 504: return "Gateway Timeout"; break;
+        case 505: return "HTTP Version Not Supported"; break;
+        default:  return "Unknown"; break;
     }
 }
 

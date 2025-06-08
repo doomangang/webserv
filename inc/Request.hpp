@@ -2,6 +2,8 @@
 #define REQUEST_HPP
 
 #include "Webserv.hpp"
+#include "Server.hpp"
+#include "Location.hpp"
 
 class Server;
 class Location;
@@ -35,16 +37,27 @@ public:
 	ssize_t										getBytesToRead() const;
 	ParseState									getStatus()   const;
 	int								   			getErrorCode()const;
+	std::string 								getQueryParam(const std::string&) const;
 
 	/* request line */
 	void										addHeader(const std::string& key, const std::string& value);
-	void										appendBody(const std::string& chunk);
+	bool										hasHeader(const std::string& key) const;
+	std::string 								getHeaderValue(const std::string& key) const;
+	const std::string& 							getPath() const;
+	const std::string& 							getQueryString() const;
+	const std::string& 							getFragment() const;
+
 	void										cutBody(ssize_t size);
 	void										addBodyPos(size_t);
-	const std::string&							findValueInHeader(const std::string& key) const;
+	void										addBodyChunk(const std::string& chunk);
 	
+	void										parseUri();
+	void										parseQueryString();
+	bool 										parseHeaderFields(const std::string& line);
+
 	/* utility */
-	void cleaner();
+	bool										hasError() const;
+	void										cleaner();
 
 private:
 	Method										_method;
@@ -56,6 +69,13 @@ private:
 	int						  					_error_code;
 	size_t										_body_pos;
 	ssize_t										_bytes_to_read;
+
+	//Url
+	std::string									_path;
+	std::string									_fragment;
+	std::string									_query_string;
+	std::map<std::string,std::string>			_query_params;
+	
 };
 
 #endif // REQUEST_HPP

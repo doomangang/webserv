@@ -1,5 +1,4 @@
 #include "../inc/ServerManager.hpp"
-#include <unordered_map>
 #include <sstream>
 
 //OCF
@@ -15,7 +14,7 @@ ServerManager::ServerManager()
 }
 
 ServerManager::ServerManager(const Config& config) 
-    : _config(config),
+    :
       _max_fd(0) {
     FD_ZERO(&_read_set);
     FD_ZERO(&_read_copy_set);
@@ -55,7 +54,7 @@ void ServerManager::setupServers(std::vector<Server> servers)
     char buf[INET_ADDRSTRLEN];
 
     // key: "host:port" → fd
-    std::unordered_map<std::string, int> serverFdMap;
+    std::map<std::string, int> serverFdMap;
 
     for (auto& server : _servers)
     {
@@ -110,13 +109,13 @@ void ServerManager::runServers()
                 readRequest(i, _clients_map[i]);
             else if (FD_ISSET(i, &write_set_cpy) && _clients_map.count(i))
             {
-                // int cgi_state = _clients_map[i].response.getCgiState(); // 0->NoCGI 1->CGI write/read to/from script 2-CGI read/write done
-                // if (cgi_state == 1 && FD_ISSET(_clients_map[i].response._cgi_obj.pipe_in[1], &write_set_cpy))
-                //     sendCgiBody(_clients_map[i], _clients_map[i].response._cgi_obj);
-                // else if (cgi_state == 1 && FD_ISSET(_clients_map[i].response._cgi_obj.pipe_out[0], &recv_set_cpy))
-                //     readCgiResponse(_clients_map[i], _clients_map[i].response._cgi_obj);
-                // else if ((cgi_state == 0 || cgi_state == 2)  && FD_ISSET(i, &write_set_cpy))
-                //     sendResponse(i, _clients_map[i]);
+                int cgi_state = _clients_map[i].response.getCgiState(); // 0->NoCGI 1->CGI write/read to/from script 2-CGI read/write done
+                if (cgi_state == 1 && FD_ISSET(_clients_map[i].response._cgi_obj.pipe_in[1], &write_set_cpy))
+                    sendCgiBody(_clients_map[i], _clients_map[i].response._cgi_obj);
+                else if (cgi_state == 1 && FD_ISSET(_clients_map[i].response._cgi_obj.pipe_out[0], &recv_set_cpy))
+                    readCgiResponse(_clients_map[i], _clients_map[i].response._cgi_obj);
+                else if ((cgi_state == 0 || cgi_state == 2)  && FD_ISSET(i, &write_set_cpy))
+                    sendResponse(i, _clients_map[i]);
             }
         }
         checkTimeout();
@@ -168,7 +167,7 @@ void ServerManager::acceptNewConnection(Server& server) {
         return;
     }
 
-    Client client;
+    Connection client;
     client.setFd(client_fd);
     client.setIp(inet_ntoa(client_addr.sin_addr));
     client.setPort(ntohs(client_addr.sin_port));
@@ -205,7 +204,7 @@ void ServerManager::acceptNewConnection(Server& server) {
         return ;
     }
 
-    Client client;
+    Connection client;
     client.setFd(client_fd);
     client.setClientAddress(client_addr);
     client.setLastRequestAt(NULL);
@@ -216,7 +215,7 @@ void ServerManager::acceptNewConnection(Server& server) {
     Logger::logMsg(GREEN, CONSOLE_OUTPUT, "New connection accepted: fd[%d]", client_fd);
 }
 
-void ServerManager::readRequest(int fd, Client& client) {
+void ServerManager::readRequest(int fd, Connection& client) {
     char buffer[4096];
     ssize_t bytes_read = read(fd, buffer, sizeof(buffer) - 1);
     if (bytes_read < 0) {
@@ -232,7 +231,7 @@ void ServerManager::readRequest(int fd, Client& client) {
     }
 
     buffer[bytes_read] = '\0'; // Null-terminate the buffer
-    client.requestBuffer.append(buffer, bytes_read);
+    // client.requestBuffer.append(buffer, bytes_read);
     client.setLastRequestAt(time(NULL));
 
     Logger::logMsg(BLUE, CONSOLE_OUTPUT, "Read request from fd[%d]: %ld bytes", fd, bytes_read);
@@ -241,22 +240,22 @@ void ServerManager::readRequest(int fd, Client& client) {
     // This is where you would typically parse the request and handle it accordingly.
 }
 
-void ServerManager::sendCgiBody(Client& client, CgiHandler& cgi_obj) {
+void ServerManager::sendCgiBody(Connection& client, CgiHandler& cgi_obj) {
 
 }
 
-void ServerManager::readCgiResponse(Client& client, CgiHandler& cgi_obj) {
+void ServerManager::readCgiResponse(Connection& client, CgiHandler& cgi_obj) {
 
 }
 
-void ServerManager::sendResponse(int fd, Client& client) {
+void ServerManager::sendResponse(int fd, Connection& client) {
 
 }
 
 /* Checks time passed for clients since last message, If more than CONNECTION_TIMEOUT, close connection */
 void    ServerManager::checkTimeout()
 {
-    for(std::unordered_map<int, Client>::iterator it = _clients_map.begin() ; it != _clients_map.end(); ++it)
+    for(std::map<int, Connection>::iterator it = _clients_map.begin() ; it != _clients_map.end(); ++it)
     {
         if (time(NULL) - it->second.getLastRequestAt() > CONNECTION_TIMEOUT)
         {
@@ -283,9 +282,9 @@ void	ServerManager::removeFromSet(const int i, fd_set &set)
     if (i == _max_fd)
         _max_fd--;
 }
-Config ServerManager::getConfig() const { return _config; }
+// Config ServerManager::getConfig() const { return _config; }
 int     ServerManager::getMaxFd() const { return _max_fd; }
-void    ServerManager::setConfig(const Config& config) { _config = config; }
+// void    ServerManager::setConfig(const Config& config) { _config = config; }
 void    ServerManager::setMaxFd(int max_fd) { _max_fd = max_fd; }
 
 /*예를 들어 splitConfigString 은:

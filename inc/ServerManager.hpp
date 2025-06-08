@@ -2,31 +2,20 @@
 #define SERVERMANAGER_HPP
 
 #include "Webserv.hpp"
-
-/* Color Sets */
-#define RESET   "\033[0m"
-#define BLACK   "\033[30m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define MAGENTA "\033[35m"
-#define CYAN    "\033[36m"
-#define WHITE   "\033[37m"
-#define GREY    "\033[38;5;250m"
+#include "Config.hpp"
+#include "HttpTypes.hpp"
+#include "Server.hpp"
+#include "Connection.hpp"
+#include "CgiHandler.hpp"
 
 class Server;
+class Config;
 
 class ServerManager {
-public:
-    enum SetType { WRITE_SET, WRITE_COPY_SET,
-                    READ_SET, READ_COPY_SET,
-                    ERROR_SET, ERROR_COPY_SET };
-
 private:
     /* member attributes */
     std::vector<Server> _servers;
-    Config              _config;
+    // Config              _config;
     int                 _max_fd;
     fd_set              _read_set,
                         _read_copy_set,
@@ -35,8 +24,8 @@ private:
                         _error_set,
                         _error_copy_set;
 
-    std::unordered_map<int, Client> _clients_map;
-    std::unordered_map<int, Server> _servers_map;
+    // std::map<int, Connection> _clients_map;
+    // std::map<int, Server> _servers_map;
 
         public:
     /* Orthodox Canonical Form (OCF) */
@@ -77,10 +66,10 @@ private:
     void    fdCopy(SetType origin, SetType copy);
     void    initializeSets();
     void    acceptNewConnection(Server& server);
-    void    readRequest(int fd, Client& client);
-    void    sendCgiBody(Client& client, CgiHandler& cgi_obj);
-    void    readCgiResponse(Client& client, CgiHandler& cgi_obj);
-    void    sendResponse(int fd, Client& client);
+    void    readRequest(int fd, Connection& client);
+    void    sendCgiBody(Connection& client, CgiHandler& cgi_obj);
+    void    readCgiResponse(Connection& client, CgiHandler& cgi_obj);
+    void    sendResponse(int fd, Connection& client);
     void	removeFromSet(const int i, fd_set &set);
     void    closeConnection(int fd);
     void    checkTimeout();

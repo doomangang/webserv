@@ -344,7 +344,7 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
     loc.setAutoindex(false);
     
     // 기본 메서드 설정
-    std::set<enum Method> defaultMethods;
+    std::set<Method> defaultMethods;
     defaultMethods.insert(GET);
     defaultMethods.insert(POST);
     defaultMethods.insert(DELETE);
@@ -388,7 +388,7 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
 
     // 5) Default methods 설정 (GET, POST, DELETE)
     if (loc.getAllowMethods().empty()) {
-        std::set<enum Method> defaults;
+        std::set<Method> defaults;
         defaults.insert(GET);
         defaults.insert(POST);
         defaults.insert(DELETE);
@@ -439,7 +439,7 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
         else if (w == "POST") loc.addAllowMethod(POST);
         else if (w == "DELETE") loc.addAllowMethod(DELETE);
         else if (w == "EMPTY") loc.addAllowMethod(EMPTY);
-        else loc.addAllowMethod(UNKNOWN);
+        else loc.addAllowMethod(UNKNOWN_METHOD);
     }
 }
 
@@ -509,7 +509,7 @@ void ConfigParser::validateBodySize(size_t size) {
     const size_t MAX_BODY_SIZE = 100 * 1024 * 1024; // 100MB
     if (size > MAX_BODY_SIZE) {
         throw std::runtime_error("client_max_body_size exceeds maximum allowed: " + 
-                               std::to_string(MAX_BODY_SIZE));
+                               HttpUtils::toString(MAX_BODY_SIZE));
     }
 }
 

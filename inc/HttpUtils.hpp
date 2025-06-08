@@ -2,6 +2,7 @@
 #define HTTP_UTILS_HPP
 
 #include "Webserv.hpp"
+#include "HttpTypes.hpp"
 
 class HttpUtils {
 private:
@@ -16,8 +17,9 @@ public:
     static std::vector<std::string> split(const std::string& str, char delimiter);
     static std::vector<std::string> splitWords(const std::string& str);
     static std::vector<std::string> splitByCRLF(const std::string& str);
-
+    static std::vector<std::string> splitBySemicolon(const std::string& s);
     
+    static Method      stringToMethod(const std::string& method_str);
     static std::string toLowerCase(const std::string& str);
     static std::string urlDecode(const std::string& str);
     static std::string urlEncode(const std::string& str);

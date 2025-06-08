@@ -201,7 +201,7 @@ void Response::setHeader(const std::string& key, const std::string& value) {
 
 void Response::setBody(const std::string& body) {
     _content = body;
-    _headers["Content-Length"] = std::to_string(body.size());
+    _headers["Content-Length"] = HttpUtils::toString(body.size());
 }
 
 std::string Response::toString() const {

@@ -3,6 +3,7 @@
 #define REQUESTPARSER_HPP
 
 #include "Webserv.hpp"
+#include "Request.hpp"
 
 class Request;
 
@@ -14,24 +15,31 @@ public:
     ~RequestParser();
     RequestParser& operator=(const RequestParser& other);
 
-    /* parse steps */
+    // /* parse steps */
     void        parseRequestLine(Request& request);
     void        parseHeaders(Request& request);
     void        parseBody(Request& request);
+    void        parseChunkedBody(Request& request);
+    bool        parseChunkSize(const std::string& line);
+
 
     /* configure limits */
     void        setMaxBodySize(size_t size);
     void        setMaxHeaderSize(size_t size);
 
-    /* parsing status */
+    // /* parsing status */
     bool        isRequestLineComplete() const;
     bool        isHeadersComplete()     const;
     bool        isParsingComplete()     const;
     bool        isBadRequest()          const;
+    TransferType isChunked()            const;
     ParseState  getParseState()         const;
 
     /* raw buffer access */
     std::string& getRawBuffer();
+
+    /* validate values */
+    void        validateHeaderValues(Request& request);
 
     /* reset for next request */
     void        reset();
@@ -43,6 +51,9 @@ private:
     std::string _raw_buffer;
 
     TransferType _is_chunked;
+    ChunkState  _chunk_state;
+    size_t      _current_chunk_size;
+    size_t      _current_chunk_received;
     size_t      _expected_body_size;
     size_t      _received_body_size;
     size_t      _header_end_pos;
