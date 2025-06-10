@@ -1,35 +1,49 @@
-#ifndef CGI_HANDLER_HPP
-#define CGI_HANDLER_HPP
+#ifndef CGIHANDLER_HPP
+#define CGIHANDLER_HPP
 
 #include "Webserv.hpp"
 
+class HttpRequest;
 class CgiHandler {
-private:
-    std::map<std::string, std::string> _env;
-    std::string _scriptPath;
-    std::vector<std::string> _args;
-    std::string _inputData;
+	private:
+		std::map<std::string, std::string>	_env;
+		char**								_ch_env;
+		char**								_argv;
+		int									_exit_status;
+		std::string							_cgi_path;
+		pid_t								_cgi_pid;
 
-    // Helper to prepare environment for execve
-    char** buildEnvArray() const;
-    char** buildArgvArray() const;
-    void freeArray(char** arr, size_t size) const;
-public:
-    CgiHandler();
-    ~CgiHandler();
+	public:
+		int	pipe_in[2];
+		int	pipe_out[2];
 
-    // Set CGI environment variables
-    void setEnv(const std::map<std::string, std::string>& env);
+		CgiHandler();
+		CgiHandler(std::string path);
+		~CgiHandler();
+		CgiHandler(CgiHandler const &other);
+		CgiHandler &operator=(CgiHandler const &rhs);
 
-    // Set CGI script path and arguments
-    void setScript(const std::string& scriptPath, const std::vector<std::string>& args);
+		void initEnv(HttpRequest& req, const std::vector<Location>::iterator it_loc);
+		void initEnvCgi(HttpRequest& req, const std::vector<Location>::iterator it_loc);
+		void execute(short &error_code);
+		void sendHeaderBody(int &pipe_out, int &fd, std::string &);
+		void fixHeader(std::string &header);
+		void clear();
+		std::string setCookie(const std::string& str);
 
-    // Set input data for CGI (e.g., POST body)
-    void setInput(const std::string& inputData);
+		void setCgiPid(pid_t cgi_pid);
+		void setCgiPath(const std::string &cgi_path);
 
-    // Execute the CGI script and get output
-    int execute(std::string& output, int timeoutSec = 5);
+		const std::map<std::string, std::string> &getEnv() const;
+		const pid_t &getCgiPid() const;
+		const std::string &getCgiPath() const;
 
+		std::string	getAfter(const std::string& path, char delim);
+		std::string	getBefore(const std::string& path, char delim);
+		std::string	getPathInfo(std::string& path, std::vector<std::string> extensions);
+		int	countCookies(const std::string& str);
+		int findStart(const std::string path, const std::string delim);
+		std::string decode(std::string &path);
 };
 
-#endif // CGI_HANDLER_HPP
+#endif

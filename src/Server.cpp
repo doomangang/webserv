@@ -156,7 +156,7 @@ void Server::setUploadStore(const std::string& path){ _upload_store = path;
     _has_upload_store = true; }
 
 // default_error_page
-std::string Server::getDefaultErrorPage() const { return _default_error_page; }
+// std::string Server::getDefaultErrorPage() const { return _default_error_page; }
 void Server::setDefaultErrorPage(const std::string& page){ _default_error_page = page; }
 
 // error_pages

@@ -4,7 +4,7 @@
 #include "Webserv.hpp"
 #include "Server.hpp"
 
-class Server;
+class ConfigParser;
 
 class Config {
 private:

@@ -26,6 +26,24 @@ public:
     Response(const Response& other);
     ~Response();
 
+    /* getter & setter */
+    Connection*                         getConnection()         const;
+    int                                 getStatusCode()         const;
+    std::string                         getStatusDescription()  const;
+    std::map<std::string, std::string>  getHeaders()            const;
+    TransferType                        getTransferType()       const;
+    std::string                         getContent()            const;
+    std::string getHeaderValue(const std::string& key) const;
+
+    
+    void setStatusCode(int code);
+    void setHeader(const std::string& key, const std::string& value);
+    void setBody(const std::string& body);
+    /* additional methods */
+    void                                addHeader(const std::string& key, const std::string& value);
+    void                                makeStatus(int code);
+    std::string                         toString() const;
+    /* exception classes */
     std::string     getRes();
     size_t      getLen() const;
     int         getCode() const;
@@ -48,7 +66,7 @@ public:
 
     Request     request;
 private:
-    // Server          _server;
+    Server    _server;
     std::string     _target_file;
     std::vector<uint8_t> _body;
     size_t          _body_length;
@@ -78,26 +96,6 @@ private:
     bool    reqError();
     int     handleCgi(std::string &);
     int     handleCgiTemp(std::string &);
-    Response& operator=(const Response& other);
-
-    /* getter & setter */
-    Connection*                         getConnection()         const;
-    int                                 getStatusCode()         const;
-    std::string                         getStatusDescription()  const;
-    std::map<std::string, std::string>  getHeaders()            const;
-    TransferType                        getTransferType()       const;
-    std::string                         getContent()            const;
-    std::string getHeaderValue(const std::string& key) const;
-
-    
-    void setStatusCode(int code);
-    void setHeader(const std::string& key, const std::string& value);
-    void setBody(const std::string& body);
-    /* additional methods */
-    void                                addHeader(const std::string& key, const std::string& value);
-    void                                makeStatus(int code);
-    std::string                         toString() const;
-    /* exception classes */
 };
 
 /* operators */
