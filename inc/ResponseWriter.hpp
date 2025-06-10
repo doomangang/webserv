@@ -1,16 +1,14 @@
-// ResponseWriter.hpp (새로 생성)
 #ifndef RESPONSEWRITER_HPP
 #define RESPONSEWRITER_HPP
 
+#include "Webserv.hpp"
 #include "Response.hpp"
-#include <queue>
 
 class ResponseWriter {
 private:
     int _fd;
     std::queue<std::string> _send_queue;
     size_t _current_offset;
-    bool _keep_alive;
     
 public:
     ResponseWriter();
@@ -24,6 +22,7 @@ public:
     ssize_t sendData();
     bool isComplete() const;
     void reset();
+    void setFd(int fd);
 };
 
 #endif

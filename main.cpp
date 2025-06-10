@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     }
     else 
 	{
-		Logger::logMsg(RED, CONSOLE_OUTPUT, "Error: wrong arguments");
+		//LoggerlogMsg(RED, CONSOLE_OUTPUT, "Error: wrong arguments");
 		return (1);
 	}
     return (0);

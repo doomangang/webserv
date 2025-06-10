@@ -1,21 +1,15 @@
-// Location.hpp
-
 #ifndef LOCATION_HPP
 #define LOCATION_HPP
 
-#include <iostream>
-#include <set>
-#include <map>
-#include <vector>
-#include <string>
-#include "Enum.hpp"
+#include "Webserv.hpp"
+#include "HttpTypes.hpp"
 
 class Location {
 private:
     /* member attributes */
     std::string              _uri;
     std::string              _root_path;
-    std::set<enum Method>    _allow_methods;
+    std::set<Method>         _allow_methods;
     std::set<std::string>    _index_files;
     std::set<std::string>    _cgi_extensions;
     bool                     _autoindex;
@@ -40,8 +34,8 @@ public:
     std::string getRootPath() const;
     void setRootPath(const std::string& path);
 
-    std::set<enum Method> getAllowMethods() const;
-    void setAllowMethods(std::set<enum Method>& methods);
+    std::set<Method> getAllowMethods() const;
+    void setAllowMethods(std::set<Method>& methods);
     void addAllowMethod(Method m);
     void clearAllowMethods();
 
@@ -71,4 +65,4 @@ public:
 
 /* operators */
 
-#endif  // LOCATION_HPP
+#endif

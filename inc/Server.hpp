@@ -3,17 +3,18 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <map>
-#include <set>
-#include <string>
+#include "Webserv.hpp"
+#include "ServerManager.hpp"
+#include "Config.hpp"
 #include "Location.hpp"
 #include "Connection.hpp"
 
 class ServerManager;
 class Config;
+class Location;
+class Connection;
+class Response;
+class Request;
 
 class Server {
 private:
@@ -81,9 +82,6 @@ public:
 	/* additional methods */
 	void   	setupServer();
 
-	bool    hasNewConnection() const;
-	void    acceptNewConnection();
-
     int getPort() const;
     void setPort(int port);
 
@@ -131,13 +129,6 @@ public:
 
     ServerManager* getManager() const;
     void setManager(ServerManager* manager);
-
-	
-	void	createResponse(int status_code);
-	bool	isSendable(int fd) const;
-	void	sendResponse(const Response&);
-	bool	hasException(int fd) const;
-	void	run();
 
 	/* exception classes */
 };
