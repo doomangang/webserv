@@ -104,6 +104,31 @@ Server& Server::operator=(const Server& other) {
 
 /* getter & setter */
 
+void Server::setupServer() {
+    int opt = 1;
+    struct sockaddr_in serv_addr;
+
+    // Create socket
+    if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        throw std::runtime_error("socket() failed");
+    }
+
+    // Set socket options to reuse address
+    if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        throw std::runtime_error("setsockopt() failed");
+    }
+
+    // Set server address structure
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(_host.c_str());
+    serv_addr.sin_port = htons(_port);
+
+    // Bind the socket to the address
+    if (bind(_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        throw std::runtime_error("bind() failed");
+    }
+}
+
 // server_names
 std::vector<std::string> Server::getServerNames() const { return _server_names; }
 void Server::setServerNames(const std::vector<std::string>& serverNames){ _server_names = serverNames; }
@@ -199,13 +224,13 @@ const Location& Server::getMatchingLocation(std::string& uri) const {
         return _locations[best_match_idx];
     }
     
+    static Location default_loc;
+    default_loc.setRootPath(this->getRootPath());
+
     return getDefaultLocation();
 }
 
 const Location& Server::getDefaultLocation() const {
-    // 기본 location 설정이 없으면 첫 번째 location을 사용
-    if (_locations.empty()) {
-        throw std::runtime_error("No locations configured");
-    }
-    return _locations[0];
+    static Location default_loc;
+    return default_loc;
 }

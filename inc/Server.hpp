@@ -82,9 +82,6 @@ public:
 	/* additional methods */
 	void   	setupServer();
 
-	bool    hasNewConnection() const;
-	void    acceptNewConnection();
-
     int getPort() const;
     void setPort(int port);
 
@@ -132,12 +129,6 @@ public:
 
     ServerManager* getManager() const;
     void setManager(ServerManager* manager);
-
-    void	createResponse(int status_code);
-    bool	isSendable(int fd) const;
-    void	sendResponse(const Response&);
-    bool	hasException(int fd) const;
-    void	run();
 
 	/* exception classes */
 };
