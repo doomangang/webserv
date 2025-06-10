@@ -1,4 +1,16 @@
 #include "../inc/Response.hpp"
+
+Response::Response()
+    : _body_length(0), _code(200), _res(NULL), _cgi(0), _cgi_response_length(0), _auto_index(false)
+{}
+
+Response::Response(Request& req)
+    : request(req), _body_length(0), _code(200), _res(NULL), _cgi(0), _cgi_response_length(0), _auto_index(false)
+{}
+
+Response::~Response() {
+    if (_res)
+        delete[] _res;
 #include "../inc/Connection.hpp"
 
 // --- 파싱부 작성 버전 ---
@@ -18,6 +30,7 @@
 //       _content(body) {
 //     makeStatus(status_code);
 // }
+
 
 Response::Response(const Response& other) {
     *this = other;
@@ -50,6 +63,69 @@ Response& Response::operator=(const Response& other) {
         _content = other._content;
     }
     return *this;
+void Response::setStatusLine() {
+    // TODO: 상태 라인 설정
+}
+
+void Response::setHeaders() {
+    // TODO: 헤더 설정
+}
+
+void Response::setServerDefaultErrorPages() {
+    // TODO: 기본 에러 페이지 설정
+}
+
+int Response::readFile() {
+    // TODO: 파일 읽기
+    return 0;
+}
+
+void Response::contentType() {
+    // TODO: Content-Type 설정
+}
+
+void Response::contentLength() {
+    // TODO: Content-Length 설정
+}
+
+void Response::connection() {
+    // TODO: Connection 헤더 설정
+}
+
+void Response::server() {
+    // TODO: Server 헤더 설정
+}
+
+void Response::location() {
+    // TODO: Location 헤더 설정
+}
+
+void Response::date() {
+    // TODO: Date 헤더 설정
+}
+
+int Response::handleTarget() {
+    // TODO: 요청 타겟 처리
+    return 0;
+}
+
+void Response::buildErrorBody() {
+    // TODO: 에러 바디 빌드
+}
+
+bool Response::reqError() {
+    // TODO: 요청 에러 체크
+    return false;
+}
+
+int Response::handleCgi(std::string &) {
+    // TODO: CGI 처리
+    return 0;
+}
+
+int Response::handleCgiTemp(std::string &) {
+    // TODO: 임시 CGI 처리
+    return 0;
 }
 
 void Response::setStatusCode(int code) {
@@ -63,33 +139,7 @@ void Response::setHeader(const std::string& key, const std::string& value) {
 
 void Response::setBody(const std::string& body) {
     _content = body;
-    _headers["Content-Length"] = std::to_string(body.size());
-}
-
-void Response::makeStatus(int code) {
-    _status_code = code;
-    switch (code) {
-        case 200: _status_description = "OK"; break;
-        case 201: _status_description = "Created"; break;
-        case 204: _status_description = "No Content"; break;
-        case 301: _status_description = "Moved Permanently"; break;
-        case 302: _status_description = "Found"; break;
-        case 400: _status_description = "Bad Request"; break;
-        case 401: _status_description = "Unauthorized"; break;
-        case 403: _status_description = "Forbidden"; break;
-        case 404: _status_description = "Not Found"; break;
-        case 405: _status_description = "Method Not Allowed"; break;
-        case 408: _status_description = "Request Timeout"; break;
-        case 413: _status_description = "Payload Too Large"; break;
-        case 414: _status_description = "URI Too Long"; break;
-        case 500: _status_description = "Internal Server Error"; break;
-        case 501: _status_description = "Not Implemented"; break;
-        case 502: _status_description = "Bad Gateway"; break;
-        case 503: _status_description = "Service Unavailable"; break;
-        case 504: _status_description = "Gateway Timeout"; break;
-        case 505: _status_description = "HTTP Version Not Supported"; break;
-        default:  _status_description = "Unknown"; break;
-    }
+    _headers["Content-Length"] = HttpUtils::toString(body.size());
 }
 
 std::string Response::toString() const {

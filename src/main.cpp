@@ -1,6 +1,8 @@
+#include "../inc/Webserv.hpp"
 #include "../inc/ServerManager.hpp"
 #include "../inc/ConfigParser.hpp"
-#include "../inc/Config.hpp"
+
+void sigpipeHandle(int sig) { if(sig) {}}
 
 void sigpipeHandle(int sig) { if(sig) {}}
 

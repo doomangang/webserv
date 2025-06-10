@@ -77,7 +77,7 @@ std::string Location::getUri() const { return _uri; }
 
 std::string Location::getRootPath() const { return _root_path; }
 
-std::set<enum Method> Location::getAllowMethods() const { return _allow_methods; }
+std::set<Method> Location::getAllowMethods() const { return _allow_methods; }
 
 std::set<std::string> Location::getIndexFiles() const { return _index_files; }
 
@@ -100,7 +100,7 @@ void Location::setUri(const std::string& uri) { _uri = uri; }
 
 void Location::setRootPath(const std::string& path) { _root_path = path; }
 
-void Location::setAllowMethods(std::set<enum Method>& methods) { _allow_methods = methods; }
+void Location::setAllowMethods(std::set<Method>& methods) { _allow_methods = methods; }
 
 void Location::addAllowMethod(Method m) { _allow_methods.insert(m); }
 

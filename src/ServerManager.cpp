@@ -138,6 +138,7 @@ void    ServerManager::acceptNewConnection(Server &serv)
     Client  new_client(serv);
     char    buf[INET_ADDRSTRLEN];
 
+
     if ( (client_sock = accept(serv.getFd(), (struct sockaddr *)&client_address,
      (socklen_t*)&client_address_size)) == -1)
     {
