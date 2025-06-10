@@ -36,7 +36,7 @@ class ServerManager
         void sendCgiBody(Client &, CgiHandler &);
         void readCgiResponse(Client &, CgiHandler &);
         void closeConnection(const int);
-        void assignServer(Client &);
+        // void assignServer(Client &);
         void addToSet(const int , fd_set &);
         void removeFromSet(const int , fd_set &);
 };

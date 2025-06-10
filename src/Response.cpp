@@ -1,190 +1,154 @@
 #include "../inc/Response.hpp"
 
-Response::Response()
-    : _body_length(0), _code(200), _res(NULL), _cgi(0), _cgi_response_length(0), _auto_index(false)
-{}
+// OCF
 
-Response::Response(Request& req)
-    : request(req), _body_length(0), _code(200), _res(NULL), _cgi(0), _cgi_response_length(0), _auto_index(false)
-{}
+Response::Response() : _code(200), _cgi_state(0) {}
 
-Response::~Response() {
-    if (_res)
-        delete[] _res;
-#include "../inc/Connection.hpp"
-
-// --- 파싱부 작성 버전 ---
-// Response::Response() 
-//     : _connection(NULL),
-//       _status_code(200),
-//       _status_description("OK"),
-//       _transfer_type(GENERAL),
-//       _content("") {
-// }
-
-// Response::Response(Connection* conn, int status_code, const std::string& body) 
-//     : _connection(conn),
-//       _status_code(status_code),
-//       _status_description(""),
-//       _transfer_type(GENERAL),
-//       _content(body) {
-//     makeStatus(status_code);
-// }
-
+Response::~Response() {}
 
 Response::Response(const Response& other) {
-    *this = other;
-    std::cout << GREEN << "Response copy constructor called\n" << RESET << std::endl;
+	*this = other;
 }
-// --- 구현부 작성 버전 ---
-Response::Response()
-    : _body_length(0), _code(200), _res(NULL), _cgi(0), _cgi_response_length(0), _auto_index(false)
-{}
-
-Response::Response(Request& req)
-    : request(req), _body_length(0), _code(200), _res(NULL), _cgi(0), _cgi_response_length(0), _auto_index(false)
-{}
-
-Response::~Response() {
-    if (_res)
-        delete[] _res;
-}
-
-// --- 파싱부 작성 버전 ---
 
 Response& Response::operator=(const Response& other) {
-    std::cout << YELLOW << "Response assignment operator called\n" << RESET << std::endl;
-    if (this != &other) {
-        _connection = other._connection;
-        _status_code = other._status_code;
-        _status_description = other._status_description;
-        _headers = other._headers;
-        _transfer_type = other._transfer_type;
-        _content = other._content;
-    }
-    return *this;
-void Response::setStatusLine() {
-    // TODO: 상태 라인 설정
+	if (this != &other) {
+		_code = other._code;
+		_status_description = other._status_description;
+		_headers = other._headers;
+		_body = other._body;
+		_cgi_state = other._cgi_state;
+		_cgi_obj = other._cgi_obj;
+		_response_content = other._response_content;
+	}
+	return *this;
 }
 
-void Response::setHeaders() {
-    // TODO: 헤더 설정
+/*
+** Core Methods
+*/
+void Response::clear() {
+	_code = 200;
+	_status_description.clear();
+	_headers.clear();
+	_body.clear();
+	_cgi_state = 0;
+	_response_content.clear();
+	_cgi_obj.clear();
 }
 
-void Response::setServerDefaultErrorPages() {
-    // TODO: 기본 에러 페이지 설정
+void Response::setErrorResponse(short code, const Server& server) {
+	_code = code;
+	_status_description = HttpUtils::getStatusPhrase(code);
+
+	setDefaultHeaders();
+	setHeader("Content-Type", "text/html");
+
+	std::string error_page_path = server.getErrorPage(code);
+	std::ifstream file(error_page_path.c_str());
+	if (file.is_open()) {
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		_body = buffer.str();
+	} else {
+		// Fallback error page
+		_body = "<html><head><title>" + HttpUtils::toString(code) + " " + _status_description + "</title></head>"
+			  + "<body><center><h1>" + HttpUtils::toString(code) + " " + _status_description + "</h1></center></body></html>";
+	}
+	setHeader("Content-Length", HttpUtils::toString(_body.length()));
 }
 
-int Response::readFile() {
-    // TODO: 파일 읽기
-    return 0;
-}
+/**
+ * @brief Parses the raw CGI output and builds a proper HTTP response.
+ * CGI output can contain its own headers. This function separates them from the body.
+ */
+void Response::buildResponseFromCgi() {
+	std::string raw_cgi_output = _response_content;
+	_response_content.clear(); // Clear buffer after use
 
-void Response::contentType() {
-    // TODO: Content-Type 설정
-}
+	// Find the end of CGI headers (first blank line)
+	size_t header_end_pos = raw_cgi_output.find("\r\n\r\n");
+	if (header_end_pos == std::string::npos) {
+		header_end_pos = raw_cgi_output.find("\n\n");
+		if (header_end_pos == std::string::npos) {
+			// No headers, assume the whole output is the body
+			_body = raw_cgi_output;
+			setStatusCode(200);
+			setHeader("Content-Length", HttpUtils::toString(_body.length()));
+			return;
+		}
+	}
+	
+	std::string cgi_headers_str = raw_cgi_output.substr(0, header_end_pos);
+	_body = raw_cgi_output.substr(header_end_pos + (raw_cgi_output[header_end_pos] == '\r' ? 4 : 2));
 
-void Response::contentLength() {
-    // TODO: Content-Length 설정
-}
+	// Set default headers first
+	setDefaultHeaders();
 
-void Response::connection() {
-    // TODO: Connection 헤더 설정
-}
+	// Parse CGI headers
+	std::vector<std::string> cgi_headers = HttpUtils::splitByCRLF(cgi_headers_str);
+	bool status_found = false;
+	for (size_t i = 0; i < cgi_headers.size(); ++i) {
+		std::string& line = cgi_headers[i];
+		size_t colon_pos = line.find(':');
+		if (colon_pos != std::string::npos) {
+			std::string key = line.substr(0, colon_pos);
+			std::string value = line.substr(colon_pos + 1);
+			HttpUtils::trim(value);
 
-void Response::server() {
-    // TODO: Server 헤더 설정
-}
+			if (HttpUtils::toLowerCase(key) == "status") {
+				setStatusCode(std::atoi(value.c_str()));
+				status_found = true;
+			} else {
+				// Overwrite default headers with CGI-provided ones
+				setHeader(key, value);
+			}
+		}
+	}
 
-void Response::location() {
-    // TODO: Location 헤더 설정
-}
-
-void Response::date() {
-    // TODO: Date 헤더 설정
-}
-
-int Response::handleTarget() {
-    // TODO: 요청 타겟 처리
-    return 0;
-}
-
-void Response::buildErrorBody() {
-    // TODO: 에러 바디 빌드
-}
-
-bool Response::reqError() {
-    // TODO: 요청 에러 체크
-    return false;
-}
-
-int Response::handleCgi(std::string &) {
-    // TODO: CGI 처리
-    return 0;
-}
-
-int Response::handleCgiTemp(std::string &) {
-    // TODO: 임시 CGI 처리
-    return 0;
-}
-
-void Response::setStatusCode(int code) {
-    _status_code = code;
-    makeStatus(code);
-}
-
-void Response::setHeader(const std::string& key, const std::string& value) {
-    _headers[key] = value;
-}
-
-void Response::setBody(const std::string& body) {
-    _content = body;
-    _headers["Content-Length"] = HttpUtils::toString(body.size());
+	if (!status_found) {
+		setStatusCode(200);
+	}
+	
+	setHeader("Content-Length", HttpUtils::toString(_body.length()));
 }
 
 std::string Response::toString() const {
-    std::ostringstream oss;
-    
-    // Status line
-    oss << "HTTP/1.1 " << _status_code << " " << _status_description << "\r\n";
-    
-    // Headers
-    for (std::map<std::string, std::string>::const_iterator it = _headers.begin();
-         it != _headers.end(); ++it) {
-        oss << it->first << ": " << it->second << "\r\n";
-    }
-    
-    // Empty line
-    oss << "\r\n";
-    
-    // Body
-    oss << _content;
-    
-    return oss.str();
+	std::stringstream ss;
+	
+	// Status Line
+	ss << "HTTP/1.1 " << _code << " " << _status_description << "\r\n";
+
+	// Headers
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		ss << it->first << ": " << it->second << "\r\n";
+	}
+
+	// End of headers
+	ss << "\r\n";
+
+	// Body
+	ss << _body;
+
+	return ss.str();
 }
 
-Connection* Response::getConnection() const {
-    return _connection;
+/*
+** Getter & Setter
+*/
+int Response::getCgiState() const { return _cgi_state; }
+void Response::setCgiState(int state) { _cgi_state = state; }
+
+void Response::setStatusCode(int code) {
+	_code = code;
+	_status_description = HttpUtils::getStatusPhrase(code);
 }
 
-int Response::getStatusCode() const {
-    return _status_code;
+void Response::setHeader(const std::string& key, const std::string& value) {
+	_headers[key] = value;
 }
 
-std::string Response::getStatusDescription() const {
-    return _status_description;
-}
-
-std::map<std::string, std::string> Response::getHeaders() const {
-    return _headers;
-}
-
-Response::TransferType Response::getTransferType() const {
-    return _transfer_type;
-}
-
-std::string Response::getContent() const {
-    return _content;
+void Response::setBody(const std::string& body) {
+	_body = body;
 }
 
 std::string Response::getHeaderValue(const std::string& key) const {
@@ -195,153 +159,15 @@ std::string Response::getHeaderValue(const std::string& key) const {
     return "";
 }
 
-void Response::addHeader(const std::string& key, const std::string& value) {
-    _headers[key] = value;
-}
-// --- 구현부 작성 버전 ---
+void Response::setDefaultHeaders() {
+	time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [80];
 
-std::string Response::getRes() {
-    return _response_content;
-}
+    time (&rawtime);
+    timeinfo = gmtime (&rawtime);
+    strftime (buffer,80,"%a, %d %b %Y %H:%M:%S GMT",&*timeinfo);
 
-size_t Response::getLen() const {
-    return _body_length;
-}
-
-int Response::getCode() const {
-    return _code;
-}
-
-void Response::setRequest(Request &req) {
-    request = req;
-}
-
-void Response::setServer(Server &server) {
-    _server = server;
-}
-
-void Response::buildResponse() {
-    // TODO: 실제 응답 빌드 로직 구현
-}
-
-void Response::clear() {
-    _response_content.clear();
-    _body.clear();
-    _body_length = 0;
-    _code = 200;
-    _location.clear();
-    _response_body.clear();
-    if (_res) {
-        delete[] _res;
-        _res = NULL;
-    }
-    _cgi = 0;
-    _cgi_response_length = 0;
-    _auto_index = false;
-}
-
-void Response::handleCgi(Request& req) {
-    // TODO: CGI 처리 로직 구현
-}
-
-void Response::cutRes(size_t len) {
-    if (len < _response_content.size())
-        _response_content = _response_content.substr(len);
-    else
-        _response_content.clear();
-}
-
-int Response::getCgiState() {
-    return _cgi;
-}
-
-void Response::setCgiState(int state) {
-    _cgi = state;
-}
-
-void Response::setErrorResponse(short code) {
-    _code = code;
-    buildErrorBody();
-}
-
-std::string Response::removeBoundary(std::string &body, std::string &boundary) {
-    // TODO: 멀티파트 바운더리 제거 로직 구현
-    return body;
-}
-
-// --- Private methods ---
-
-int Response::buildBody() {
-    // TODO: 바디 빌드 로직 구현
-    return 0;
-}
-
-size_t Response::file_size() {
-    // TODO: 파일 크기 반환
-    return 0;
-}
-
-void Response::setStatusLine() {
-    // TODO: 상태 라인 설정
-}
-
-void Response::setHeaders() {
-    // TODO: 헤더 설정
-}
-
-void Response::setServerDefaultErrorPages() {
-    // TODO: 기본 에러 페이지 설정
-}
-
-int Response::readFile() {
-    // TODO: 파일 읽기
-    return 0;
-}
-
-void Response::contentType() {
-    // TODO: Content-Type 설정
-}
-
-void Response::contentLength() {
-    // TODO: Content-Length 설정
-}
-
-void Response::connection() {
-    // TODO: Connection 헤더 설정
-}
-
-void Response::server() {
-    // TODO: Server 헤더 설정
-}
-
-void Response::location() {
-    // TODO: Location 헤더 설정
-}
-
-void Response::date() {
-    // TODO: Date 헤더 설정
-}
-
-int Response::handleTarget() {
-    // TODO: 요청 타겟 처리
-    return 0;
-}
-
-void Response::buildErrorBody() {
-    // TODO: 에러 바디 빌드
-}
-
-bool Response::reqError() {
-    // TODO: 요청 에러 체크
-    return false;
-}
-
-int Response::handleCgi(std::string &) {
-    // TODO: CGI 처리
-    return 0;
-}
-
-int Response::handleCgiTemp(std::string &) {
-    // TODO: 임시 CGI 처리
-    return 0;
+	setHeader("Server", "webserv/1.0");
+	setHeader("Date", std::string(buffer));
 }
