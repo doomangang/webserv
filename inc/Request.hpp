@@ -4,15 +4,12 @@
 #include "Webserv.hpp"
 #include "Server.hpp"
 #include "Location.hpp"
+#include "HttpTypes.hpp"
 
 class Server;
 class Location;
 
 class Request {
-public:
-    enum Method { GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE };
-    enum URIType { DIRECTORY, FILE, CGI_PROGRAM };
-    enum TransferType { GENERAL, CHUNKED };
 private:
     /* member attributes */
     Connection*                         _connection;
@@ -26,10 +23,10 @@ private:
     TransferType                        _transfer_type;
     std::string                         _content;
     std::string                         _origin;
-    Request();
 
 public:
     /* Orthodox Canonical Form (OCF) */
+    Request();
     Request(Connection*, Server*, std::string& start_line);
     Request(const Request& other);
     ~Request();

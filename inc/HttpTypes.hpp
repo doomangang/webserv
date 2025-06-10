@@ -9,6 +9,7 @@ enum Method {
     UNKNOWN_METHOD
 };
 
+enum URIType { DIRECTORY, FILE, CGI_PROGRAM };
 enum TransferType { GENERAL, CHUNKED };
 
 enum ChunkState {

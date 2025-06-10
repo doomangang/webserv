@@ -240,41 +240,22 @@ void    ServerManager::assignServer(Client &c)
  */
 void    ServerManager::readRequest(const int &i, Client &c)
 {
-    char    buffer[MESSAGE_BUFFER];
-    int     bytes_read = 0;
-    bytes_read = read(i, buffer, MESSAGE_BUFFER);
-    if (bytes_read == 0)
+    c.readAndParse();
+
+    if (c.parser.isHeadersComplete() && !c.request.hasError())
+        c.findSetConfigs(_servers);
+
+    c.processRequest();
+    
+    if (c.response.getCgiState() == 1) // only when cgi == 1
     {
-        Logger::logMsg(INFO, CONSOLE_OUTPUT, "webserv: Client %d Closed Connection", i);
-        closeConnection(i);
-        return ;
-    }
-    else if (bytes_read < 0)
-    {
-        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: fd %d read error %s", i, strerror(errno));
-        closeConnection(i);
-        return ;
-    }
-    else if (bytes_read != 0)
-    {
-        c.updateTime();
-        c.request.feed(buffer, bytes_read);
-        memset(buffer, 0, sizeof(buffer));
+        handleReqBody(c);
+        addToSet(c.response._cgi_obj.pipe_in[1],  _write_fd_pool);
+        addToSet(c.response._cgi_obj.pipe_out[0],  _recv_fd_pool);
     }
 
-    if (c.request.parsingCompleted() || c.request.errorCode()) // 1 = parsing completed and we can work on the response.
-    {
-        assignServer(c);
-        c.buildResponse();
-        if (c.response.getCgiState())
-        {
-            handleReqBody(c);
-            addToSet(c.response._cgi_obj.pipe_in[1],  _write_fd_pool);
-            addToSet(c.response._cgi_obj.pipe_out[0],  _recv_fd_pool);
-        }
-        removeFromSet(i, _recv_fd_pool);
-        addToSet(i, _write_fd_pool);
-    }
+    removeFromSet(i, _recv_fd_pool);
+    addToSet(i, _write_fd_pool);
 }
 
 void    ServerManager::handleReqBody(Client &c)

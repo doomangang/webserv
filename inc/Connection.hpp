@@ -64,7 +64,6 @@ public:
 
 	/* response handling */
 	void						prepareResponse();
-	void						prepareErrorResponse(int error_code);
 	void						resetConnection();
 
 	/* I/O accessors */
