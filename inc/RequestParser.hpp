@@ -4,6 +4,7 @@
 
 #include "Webserv.hpp"
 #include "Request.hpp"
+#include "HttpTypes.hpp"
 
 class Request;
 

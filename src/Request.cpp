@@ -44,6 +44,23 @@ bool Request::hasError() const {
     return _status == BAD_REQUEST || _error_code != 0;
 }
 
+bool Request::keepAlive() const {
+    std::map<std::string, std::string>::const_iterator it = _headers.find("connection");
+    if (it != _headers.end()) {
+        if (it->second == "close") {
+            return false;
+        }
+        if (it->second == "keep-alive") {
+            return true;
+        }
+    }
+    // If no Connection header, HTTP/1.1 defaults to keep-alive, while HTTP/1.0 and older default to close.
+    if (_version == "HTTP/1.1") {
+        return true;
+    }
+    return false;
+}
+
 void Request::cleaner() {
     _method = GET;
     _url.clear();

@@ -50,13 +50,20 @@ void	Client::findSetConfigs(const std::vector<Server>& servers) {
 	if (colon_pos != std::string::npos)
 		host = host.substr(0, colon_pos);
 
-	for (size_t i = 0 ; i < servers.size() ; ++i) {
-		const std::vector<std::string>& server_names = servers[i].getServerNames();
-		for (size_t j = 0; j < server_names.size(); ++j) {
-			matched = &servers[i];
-			break ;
-		}
-	}
+	bool found = false;
+    for (size_t i = 0; i < servers.size(); ++i) {
+        const std::vector<std::string>& server_names = servers[i].getServerNames();
+        for (size_t j = 0; j < server_names.size(); ++j) {
+            if (server_names[j] == host) {
+                matched = &servers[i];
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            break;
+        }
+    }
 
 	server = *matched;
 
