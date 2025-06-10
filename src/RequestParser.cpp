@@ -221,8 +221,16 @@ void RequestParser::parseChunkedBody(Request& request) {
             size_t needed = _current_chunk_size - _current_chunk_received;
             size_t to_read = std::min(available, needed);
             
+            if (_received_body_size + to_read > _max_body_size) {
+                request.setErrorCode(413); // Payload Too Large
+                _parse_state = BAD_REQUEST;
+                return;
+            }
+
             request.addBodyChunk(_raw_buffer.substr(0, to_read));
             _raw_buffer.erase(0, to_read);
+
+            _received_body_size += to_read;
             _current_chunk_received += to_read;
             
             if (_current_chunk_received >= _current_chunk_size) {

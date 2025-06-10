@@ -260,9 +260,9 @@ void Client::handleDirectoryListing(const Location& location, const std::string&
     }
 }
 
-Client::Client() : _fd(-1) { setLastRequestAt(); }
+Client::Client() : _fd(-1), writer(-1) { setLastRequestAt(); }
 
-Client::Client(int client_fd) : _fd(client_fd) {
+Client::Client(int client_fd) : _fd(client_fd), writer(client_fd) {
     setLastRequestAt();
 }
 
@@ -272,7 +272,8 @@ Client::Client(const Client& other)
       response(other.response),
       request(other.request),
       server(other.server),
-      parser(other.parser)
+      parser(other.parser), 
+        writer(other._fd)
 {}
 
 Client::~Client() {}
@@ -287,6 +288,7 @@ Client& Client::operator=(const Client& other)
         request = other.request;
         server = other.server;
         parser = other.parser;
+        writer = other.writer;
     }
     return *this;
 }

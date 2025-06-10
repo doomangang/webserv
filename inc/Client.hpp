@@ -2,7 +2,6 @@
 #define CLIENT_HPP
 
 #include "Webserv.hpp"
-#include "Response.hpp"
 #include "HttpUtils.hpp"
 
 class Client {
@@ -25,6 +24,7 @@ public:
 	Request             request;
 	Server              server;
 	RequestParser       parser;
+	ResponseWriter		writer;
 
 	/* additional methods */
 	void                readAndParse();
