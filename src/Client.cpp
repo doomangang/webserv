@@ -7,38 +7,90 @@ void	Client::readAndParse() {
 	char buf[MESSAGE_BUFFER];
 	memset(buf, 0, MESSAGE_BUFFER);
 
+	Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Attempting to read from fd %d", _fd);
+
     ssize_t n = recv(_fd, buf, sizeof(buf), 0);
+    
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "recv() returned %zd for fd %d", n, _fd);
+    
     if (n <= 0) {
-        if (n < 0)
-			request.setErrorCode(500);
-		parser.reset();
-		request.setStatus(BAD_REQUEST);
-        return ;
+        if (n == 0) {
+            Logger::logMsg(INFO, CONSOLE_OUTPUT, "Client fd %d closed connection normally", _fd);
+            parser.reset();
+            setConnectionState(END_CONNECTION); 
+            return;
+        }
+        
+        int saved_errno = errno;
+        if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK) {
+            Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "recv() would block on fd %d (EAGAIN/EWOULDBLOCK)", _fd);
+            setConnectionState(READ_CONTINUE);
+            return;
+        }
+        
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "recv() failed on fd %d: %s (errno=%d)", 
+                      _fd, strerror(saved_errno), saved_errno);
+        request.setErrorCode(500);
+        parser.reset();
+        request.setStatus(BAD_REQUEST);
+        setConnectionState(END_CONNECTION);
+        return;
     }
 
-	setLastRequestAt();
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Successfully received %zd bytes from fd %d", n, _fd);
+    setConnectionState(FROM_CLIENT);
+    
+    std::string preview(buf, std::min((size_t)n, (size_t)100));
+    for (size_t i = 0; i < preview.length(); ++i) {
+        if (preview[i] < 32 || preview[i] > 126) {
+            preview[i] = '.';
+        }
+    }
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Data preview: [%s%s]", 
+                  preview.c_str(), n > 100 ? "..." : "");
+    
+    setLastRequestAt();
     parser.getRawBuffer().append(buf, n);
 
     try {
-        if (!parser.isRequestLineComplete())
+        Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Starting parse process for fd %d", _fd);
+        
+        if (!parser.isRequestLineComplete()) {
+            Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Parsing request line for fd %d", _fd);
             parser.parseRequestLine(request);
+        }
         
-        if (parser.isRequestLineComplete() && !parser.isHeadersComplete())
+        if (parser.isRequestLineComplete() && !parser.isHeadersComplete()) {
+            Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Parsing headers for fd %d", _fd);
             parser.parseHeaders(request);
+        }
 
-        
         if (parser.isHeadersComplete()) {
+            Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Parsing body for fd %d", _fd);
             if (parser.isChunked() == CHUNKED)
-				parser.parseChunkedBody(request);
-			else
-				parser.parseBody(request);
+                parser.parseChunkedBody(request);
+            else
+                parser.parseBody(request);
+        }
+        
+        Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Parse state for fd %d: %d", _fd, parser.getParseState());
+        
+        if (parser.getParseState() == COMPLETE) {
+            setConnectionState(TO_CLIENT);
+        } else if (parser.getParseState() == BAD_REQUEST) {
+            setConnectionState(END_CONNECTION);
+        } else {
+            setConnectionState(READ_CONTINUE);
         }
                 
     } catch (const std::exception& e) {
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "Parse error on fd %d: %s", _fd, e.what());
         request.setErrorCode(400);
         request.setStatus(BAD_REQUEST);
+        setConnectionState(END_CONNECTION);  // 파싱 에러로 인한 종료
     }
-	request.setStatus(parser.getParseState());
+    
+    request.setStatus(parser.getParseState());
 }
 
 void	Client::findSetConfigs(const std::vector<Server>& servers) {
@@ -346,23 +398,29 @@ void Client::updateTime() {
     setLastRequestAt();
 }
 
-Client::Client() : _fd(-1), writer(-1) { setLastRequestAt(); }
+Client::Client() : _fd(-1), _connection_state(FROM_CLIENT), writer(-1) { setLastRequestAt(); }
 
-Client::Client(int client_fd) : _fd(client_fd), writer(client_fd) {
+Client::Client(int client_fd) : _fd(client_fd), _connection_state(FROM_CLIENT), writer(client_fd) {
     setLastRequestAt();
 }
 
+
+
+Client::~Client() {}
 Client::Client(const Client& other)
     : _fd(other._fd),
       _last_request_at(other._last_request_at),
+      _ip(other._ip),
+      _port(other._port),
+      _connection_state(other._connection_state),  // 추가
       response(other.response),
       request(other.request),
       server(other.server),
       parser(other.parser), 
-        writer(other._fd)
-{}
-
-Client::~Client() {}
+      writer(other.writer)
+{
+    writer.setFd(_fd);
+}
 
 Client& Client::operator=(const Client& other)
 {
@@ -370,11 +428,16 @@ Client& Client::operator=(const Client& other)
     {
         _fd = other._fd;
         _last_request_at = other._last_request_at;
+        _ip = other._ip;
+        _port = other._port;
+        _connection_state = other._connection_state;  // 추가
         response = other.response;
         request = other.request;
         server = other.server;
         parser = other.parser;
         writer = other.writer;
+        
+        writer.setFd(_fd);
     }
     return *this;
 }
@@ -388,6 +451,7 @@ Request& Client::getRequest() { return request; }
 Response& Client::getResponse() { return response; }
 ResponseWriter& Client::getWriter() { return writer; }
 RequestParser& Client::getParser() { return parser; }
+ConnectionState Client::getConnectionState() const { return _connection_state; }
 
 void Client::setLastRequestAt() { _last_request_at = time(NULL); }
 void Client::setFd(int fd) { _fd = fd; }
@@ -398,3 +462,4 @@ void Client::setRequest(const Request& request) { this->request = request; }
 void Client::setResponse(const Response& response) { this->response = response; }
 void Client::setWriter(const ResponseWriter& writer) { this->writer = writer; }
 void Client::setParser(const RequestParser& parser) { this->parser = parser; }
+void Client::setConnectionState(ConnectionState state) { _connection_state = state; }

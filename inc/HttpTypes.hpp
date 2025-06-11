@@ -45,6 +45,7 @@ enum ParseState {
     BODY_INCOMPLETE,
     TRAILER_INCOMPLETE,        
     COMPLETE,           
+    CONNECTION_CLOSED,
     BAD_REQUEST  
 };
 

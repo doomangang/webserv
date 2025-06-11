@@ -18,6 +18,8 @@ private:
 	std::string 		_ip;
 	int         		_port;
 
+	ConnectionState		_connection_state;
+
 	void				prepareAutoindexPage(const std::string& dir_path);
 	
 public:
@@ -60,7 +62,7 @@ public:
 	Response&           getResponse();
 	ResponseWriter&    	getWriter();
 	RequestParser&     	getParser();
-
+	ConnectionState     getConnectionState() const;
 	
 	void                setLastRequestAt();
 	void                setFd(int fd);
@@ -71,6 +73,7 @@ public:
 	void				setResponse(const Response& response);
 	void				setWriter(const ResponseWriter& writer);
 	void				setParser(const RequestParser& parser);
+	void				setConnectionState(ConnectionState state);
 
 	/* exception classes */
 };

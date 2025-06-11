@@ -105,25 +105,68 @@ void Server::setupServer() {
     int opt = 1;
     struct sockaddr_in serv_addr;
 
+    Logger::logMsg(INFO, CONSOLE_OUTPUT, "Setting up server on %s:%d", _host.c_str(), _port);
+
     // Create socket
-    if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    _fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (_fd == -1) {
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "socket() failed: %s", strerror(errno));
         throw std::runtime_error("socket() failed");
     }
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Created socket fd: %d", _fd);
 
-    // Set socket options to reuse address
-    if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-        throw std::runtime_error("setsockopt() failed");
+    // Set socket options to reuse address and port
+    if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "setsockopt(SO_REUSEADDR) failed: %s", strerror(errno));
+        close(_fd);
+        throw std::runtime_error("setsockopt(SO_REUSEADDR) failed");
     }
+
+#ifdef SO_REUSEPORT
+    if (setsockopt(_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt)) == -1) {
+        Logger::logMsg(INFO, CONSOLE_OUTPUT, "setsockopt(SO_REUSEPORT) not available: %s", strerror(errno));
+        // SO_REUSEPORT 실패는 치명적이지 않으므로 계속 진행
+    }
+#endif
 
     // Set server address structure
+    memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(_host.c_str());
+    
+    if (_host == "0.0.0.0" || _host.empty()) {
+        serv_addr.sin_addr.s_addr = INADDR_ANY;
+    } else {
+        if (inet_aton(_host.c_str(), &serv_addr.sin_addr) == 0) {
+            Logger::logMsg(ERROR, CONSOLE_OUTPUT, "Invalid host address: %s", _host.c_str());
+            close(_fd);
+            throw std::runtime_error("Invalid host address");
+        }
+        Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Binding to address %s", _host.c_str());
+    }
+    
     serv_addr.sin_port = htons(_port);
 
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Attempting to bind socket %d to %s:%d", 
+                   _fd, _host.c_str(), _port);
+
     // Bind the socket to the address
-    if (bind(_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        throw std::runtime_error("bind() failed");
+    if (bind(_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
+        int saved_errno = errno;
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "bind() failed for %s:%d: %s (errno=%d)", 
+                      _host.c_str(), _port, strerror(saved_errno), saved_errno);
+        close(_fd);
+        
+        if (saved_errno == EADDRINUSE) {
+            throw std::runtime_error("Address already in use");
+        } else if (saved_errno == EACCES) {
+            throw std::runtime_error("Permission denied (need root for ports < 1024?)");
+        } else {
+            throw std::runtime_error("bind() failed");
+        }
     }
+    
+    Logger::logMsg(INFO, CONSOLE_OUTPUT, "Server successfully bound to %s:%d (fd: %d)", 
+                   _host.c_str(), _port, _fd);
 }
 
 // // server_names

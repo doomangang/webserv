@@ -140,35 +140,39 @@ void    ServerManager::initializeSets()
 void    ServerManager::acceptNewConnection(Server &serv)
 {
     struct sockaddr_in client_address;
-    long  client_address_size = sizeof(client_address);
-    int client_sock = 0;
-    printf("[DBG] Accepted socket = %d\n", client_sock);
+    socklen_t client_address_size = sizeof(client_address);
+    int client_sock;
     char buf[INET_ADDRSTRLEN];
 
-    if ( (client_sock = accept(serv.getFd(), (struct sockaddr *)&client_address,
-     (socklen_t*)&client_address_size)) == -1)
+    client_sock = accept(serv.getFd(), (struct sockaddr *)&client_address, &client_address_size);
+    if (client_sock == -1)
     {
-        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: accept error %s", strerror(errno));
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: accept error %s", strerror(errno));
+        }
         return ;
     }
-    Logger::logMsg(INFO, CONSOLE_OUTPUT, "New Connection From %s, Assigned Socket %d",inet_ntop(AF_INET, &client_address, buf, INET_ADDRSTRLEN), client_sock);
-
-    addToSet(client_sock, _recv_fd_pool);
+    
+    Logger::logMsg(INFO, CONSOLE_OUTPUT, "New Connection From %s, Assigned Socket %d",
+                   inet_ntop(AF_INET, &client_address.sin_addr, buf, INET_ADDRSTRLEN), client_sock);
 
     if (fcntl(client_sock, F_SETFL, O_NONBLOCK) < 0)
     {
         Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: fcntl error %s", strerror(errno));
-        removeFromSet(client_sock, _recv_fd_pool);
         close(client_sock);
         return ;
     }
 
-    Client  new_client(serv.getFd());
+    addToSet(client_sock, _recv_fd_pool);
+
+    Client  new_client(client_sock);
     new_client.setServer(serv);
 
     if (_clients_map.count(client_sock) != 0)
         _clients_map.erase(client_sock);
     _clients_map.insert(std::make_pair(client_sock, new_client));
+    
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Client fd %d added to receive set", client_sock);
 }
 
 
@@ -264,21 +268,41 @@ void    ServerManager::sendResponse(const int &i, Client &c)
  */
 void    ServerManager::readRequest(const int &i, Client &c)
 {
-    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "readRequest() called for %s\n", strerror(i));
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "readRequest() called for fd %d", i);
     c.readAndParse();
 
     Logger::logMsg(DEBUG, CONSOLE_OUTPUT,
-        "    parseComplete= %d, hasError=%d", c.isParseComplete()
-        ,c.getRequest().hasError());
-    if (c.isParseComplete() || c.getRequest().hasError())
-    {
-        if (!c.request.hasError())
-            c.findSetConfigs(_servers);
-        else
-            c.prepareErrorResponse(c.request.getErrorCode());
+        "    parseComplete= %d, hasError=%d, connectionState=%d", 
+        c.isParseComplete(), c.getRequest().hasError(), c.getConnectionState());
         
-        removeFromSet(i, _recv_fd_pool);
-        addToSet(i, _write_fd_pool);
+    switch (c.getConnectionState()) {
+        case END_CONNECTION:
+            Logger::logMsg(INFO, CONSOLE_OUTPUT, "Connection ending for fd %d", i);
+            closeConnection(i);
+            break;
+            
+        case TO_CLIENT:
+            if (!c.request.hasError()) {
+                c.findSetConfigs(_servers);
+                Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Request parsed successfully, moving fd %d to write set", i);
+            } else {
+                Logger::logMsg(INFO, CONSOLE_OUTPUT, "Request has error %d, preparing error response", 
+                              c.request.getErrorCode());
+                c.prepareErrorResponse(c.request.getErrorCode());
+            }
+            removeFromSet(i, _recv_fd_pool);
+            addToSet(i, _write_fd_pool);
+            break;
+            
+        case FROM_CLIENT:
+        case READ_CONTINUE:
+            Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Continuing to read from fd %d", i);
+            break;
+            
+        case CGI:
+        case FROM_FILE:
+        case COMBINE:
+            break;
     }
 }
 

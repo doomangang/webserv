@@ -267,6 +267,12 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
                 srv.setPort(static_cast<unsigned short>(std::atoi(args.c_str())));
             }
         }
+        else if (HttpUtils::dirExists(stmt, "host")) {
+            // "host 127.0.0.1" - listen에서 설정된 host를 덮어씀
+            std::string host_addr = stmt.substr(5);
+            HttpUtils::trim(host_addr);
+            srv.setHost(host_addr);
+        }
         else if (HttpUtils::dirExists(stmt, "server_name")) {
             // e.g. "server_name a.com b.com"
             std::vector<std::string> names = HttpUtils::splitWords(stmt.substr(12));

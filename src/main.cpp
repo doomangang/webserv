@@ -12,12 +12,19 @@ int main(int argc, char **argv, char** envp) {
             ConfigParser    parser;
             ServerManager   manager;
 
-			signal(SIGPIPE, sigpipeHandle);
+            signal(SIGPIPE, sigpipeHandle);
             configPath = argc == 1 ? "./configs/default.conf" : argv[1];
             parser.loadConfigFile(configPath);
-
-			manager.setupServers(parser.parseConfigFile(configPath, envp).getServers());
-			manager.runServers();
+            Logger::logMsg(INFO, CONSOLE_OUTPUT, "Config file loaded successfully");
+            
+            Config config = parser.parseConfigFile(configPath, envp);
+            Logger::logMsg(INFO, CONSOLE_OUTPUT, "Config parsed successfully");
+            
+            std::vector<Server> servers = config.getServers();            
+            manager.setupServers(servers);
+            Logger::logMsg(INFO, CONSOLE_OUTPUT, "Servers setup completed, starting main loop...");
+            
+            manager.runServers();
         }
         catch (const std::exception& e) {
             std::cerr << RED << "Error: " << e.what() << RESET << std::endl;
@@ -32,5 +39,5 @@ int main(int argc, char **argv, char** envp) {
         std::cerr << RED << "Usage: " << argv[0] << " [config_file_path]" << RESET << std::endl;
         return 1;
     }
-
+    
 }
