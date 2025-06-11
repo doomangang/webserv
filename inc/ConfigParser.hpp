@@ -3,6 +3,8 @@
 
 #include "Webserv.hpp"
 #include "HttpUtils.hpp"
+#include "Config.hpp"
+#include "Location.hpp"
 #include "Server.hpp"
 
 class Server;

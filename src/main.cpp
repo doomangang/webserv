@@ -1,8 +1,7 @@
 #include "../inc/Webserv.hpp"
 #include "../inc/ServerManager.hpp"
 #include "../inc/ConfigParser.hpp"
-
-void sigpipeHandle(int sig) { if(sig) {}}
+#include "../inc/Config.hpp"
 
 void sigpipeHandle(int sig) { if(sig) {}}
 
@@ -11,6 +10,7 @@ int main(int argc, char **argv, char** envp) {
         try {
             std::string configPath;
             ConfigParser    parser;
+            ServerManager   manager;
 
 			signal(SIGPIPE, sigpipeHandle);
             configPath = argc == 1 ? "./configs/default.conf" : argv[1];

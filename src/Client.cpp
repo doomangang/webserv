@@ -40,8 +40,10 @@ void	Client::readAndParse() {
 }
 
 void	Client::findSetConfigs(const std::vector<Server>& servers) {
-	if (servers.empty())
-		return ;
+	if (servers.empty()) {
+        server = Server();
+        return ;
+    }
 	
 	const Server* matched = &servers[0];
 	std::string host = request.getHeaderValue("host");
@@ -233,7 +235,12 @@ void Client::handleStaticFile(const std::string& file_path)
 void Client::handleDirectoryListing(const Location& location, const std::string& dir_path)
 {
     // 1. Index 파일 찾아보기
-    const std::set<std::string>& index_files = location.getIndexFiles();
+    const std::set<std::string>& loc_indexes = location.getIndexFiles();
+    const std::vector<std::string>& srv_indexes_vec = server.getIndexFiles();
+    const std::set<std::string> srv_indexes(srv_indexes_vec.begin(), srv_indexes_vec.end());
+
+    const std::set<std::string>& index_files = loc_indexes.empty() ? srv_indexes : loc_indexes;
+
     for (std::set<std::string>::const_iterator it = index_files.begin(); it != index_files.end(); ++it) {
         std::string index_path = dir_path;
         if (index_path[index_path.length() - 1] != '/') {
@@ -250,14 +257,71 @@ void Client::handleDirectoryListing(const Location& location, const std::string&
         }
     }
 
-    // 2. Index 파일이 없고, autoindex가 켜져있는 경우
-    if (location.getAutoindex()) {
-        prepareErrorResponse(501); // 501 Not Implemented 
+    bool autoindex_on = location.getAutoindex();
+    if (location.getAutoindex() == false) { 
+        autoindex_on = server.getAutoindex();
     }
-    // 3. Index 파일도 없고 autoindex도 꺼져있는 경우
+    
+    if (autoindex_on) {
+        prepareAutoindexPage(dir_path);
+    }
     else {
-        prepareErrorResponse(403); // 403 Forbidden
+        prepareErrorResponse(403); // Forbidden
     }
+}
+
+void Client::prepareAutoindexPage(const std::string& dir_path) {
+    std::string request_path = request.getPath();
+    if (request_path.empty() || request_path[request_path.length() - 1] != '/') {
+        request_path += "/";
+    }
+
+    std::stringstream html;
+    html << "<html>\r\n<head><title>Index of " << request_path << "</title></head>\r\n";
+    html << "<body>\r\n<h1>Index of " << request_path << "</h1><hr><pre>\r\n";
+
+    DIR *dir = opendir(dir_path.c_str());
+    if (!dir) {
+        prepareErrorResponse(500); // Internal Server Error
+        return;
+    }
+
+    html << "<a href=\"../\">../</a>\r\n";
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        std::string name = entry->d_name;
+        if (name == "." || name == "..") continue;
+
+        std::string full_path = dir_path + "/" + name;
+        struct stat st;
+        if (stat(full_path.c_str(), &st) != 0) continue;
+
+        if (S_ISDIR(st.st_mode)) {
+            html << "<a href=\"" << name << "/\">" << name << "/</a>\r\n";
+        } else {
+            html << "<a href=\"" << name << "\">" << name << "</a>\r\n";
+        }
+    }
+    closedir(dir);
+
+    html << "</pre><hr></body>\r\n</html>\r\n";
+
+    response.setStatusCode(200);
+    response.setHeader("Content-Type", "text/html");
+    response.setBody(html.str());
+    response.setHeader("Content-Length", HttpUtils::toString(html.str().length()));
+}
+
+void Client::clearClient() {
+    response.clear();
+    request.cleaner();
+    parser.reset();
+    writer.reset();
+}
+
+void Client::updateTime() {
+    setLastRequestAt();
 }
 
 Client::Client() : _fd(-1), writer(-1) { setLastRequestAt(); }
@@ -297,8 +361,18 @@ int Client::getFd() const { return _fd; }
 time_t Client::getLastRequestAt() const { return _last_request_at; }
 std::string Client::getIp() const { return _ip; }
 int Client::getPort() const { return _port; }
+Server Client::getServer() const { return server; }
+Request& Client::getRequest() { return request; }
+Response& Client::getResponse() { return response; }
+ResponseWriter& Client::getWriter() { return writer; }
+RequestParser& Client::getParser() { return parser; }
 
 void Client::setLastRequestAt() { _last_request_at = time(NULL); }
 void Client::setFd(int fd) { _fd = fd; }
 void Client::setIp(const std::string& ip) { _ip = ip; }
 void Client::setPort(int port) { _port = port; }
+void Client::setServer(const Server& server) { this->server = server; }
+void Client::setRequest(const Request& request) { this->request = request; }
+void Client::setResponse(const Response& response) { this->response = response; }
+void Client::setWriter(const ResponseWriter& writer) { this->writer = writer; }
+void Client::setParser(const RequestParser& parser) { this->parser = parser; }

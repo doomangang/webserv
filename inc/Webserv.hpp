@@ -41,16 +41,22 @@
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <sys/select.h>
-# include <sys/epoll.h>
+// # include <sys/epoll.h>
 # include <arpa/inet.h>
 
-# include "Config.hpp"
-# include "Server.hpp"
-# include "Location.hpp"
-# include "Request.hpp"
-# include "CgiHandler.hpp"
+// # include "Config.hpp"
+// # include "Server.hpp"
+// # include "Location.hpp"
+// # include "Request.hpp"
+// # include "Response.hpp"
+// # include "RequestParser.hpp"
+// # include "ResponseWriter.hpp"
+// # include "Client.hpp"
+// # include "CgiHandler.hpp"
 // # include "Mime.hpp"
 # include "Logger.hpp"
+# include "HttpUtils.hpp"
+# include "HttpTypes.hpp"
 
 /* Color Sets */
 #define RESET   "\033[0m"
