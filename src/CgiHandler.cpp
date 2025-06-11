@@ -109,7 +109,7 @@ void CgiHandler::initEnvCgi(Request& req, const std::vector<Location>::iterator)
 		std::stringstream out;
 		out << req.getBody().length();
 		this->_env["CONTENT_LENGTH"] = out.str();
-		// Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Content-Length Passed to cgi is %s", _env["CONTENT_LENGTH"].c_str());
+		Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Content-Length Passed to cgi is %s", _env["CONTENT_LENGTH"].c_str());
 		this->_env["CONTENT_TYPE"] = req.getHeaderValue("content-type");
 	}
 
@@ -205,14 +205,14 @@ void CgiHandler::execute(short &error_code)
 	}
 	if (pipe(pipe_in) < 0)
 	{
-        // Logger::logMsg(ERROR, CONSOLE_OUTPUT, "pipe failed");
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "pipe failed");
 
 		error_code = 500;
 		return ;
 	}
 	if (pipe(pipe_out) < 0)
 	{
-        // Logger::logMsg(ERROR, CONSOLE_OUTPUT, "pipe failed");
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "pipe failed");
 
 		close(pipe_in[0]);
 		close(pipe_in[1]);
