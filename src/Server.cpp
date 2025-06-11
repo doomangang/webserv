@@ -211,50 +211,79 @@ const Location& Server::getMatchingLocation(std::string& uri) const {
     // 가장 긴 매칭 prefix 찾기
     size_t best_match_len = 0;
     size_t best_match_idx = 0;
+    bool found = false;
     
     for (size_t i = 0; i < _locations.size(); ++i) {
         const std::string& loc_uri = _locations[i].getUri();
         if (uri.find(loc_uri) == 0 && loc_uri.length() > best_match_len) {
             best_match_idx = i;
             best_match_len = loc_uri.length();
+            found = true;
         }
     }
     
     if (best_match_len > 0) {
         return _locations[best_match_idx];
     }
-    
-    static Location default_loc;
-    default_loc.setRootPath(this->getRootPath());
 
     return getDefaultLocation();
 }
 
 const Location& Server::getDefaultLocation() const {
-    static Location default_loc;
-    return default_loc;
+    static Location default_location;
+    if (default_location.getRootPath().empty() && !_root_path.empty()) {
+        default_location.setRootPath(_root_path);
+        
+        // 기본 메서드 설정
+        std::set<Method> default_methods;
+        default_methods.insert(GET);
+        default_methods.insert(POST);
+        default_methods.insert(DELETE);
+        default_location.setAllowMethods(default_methods);
+        
+        // 기본 인덱스 파일 설정
+        if (!_index_files.empty()) {
+            default_location.setIndexFiles(_index_files);
+        }
+        
+        default_location.setAutoindex(_autoindex);
+    }
+    
+    return default_location;
 }
 
 // Getter
-    // const std::string& Server::getServerNames() const { return _server_names; }
-    const std::string& Server::getHost() const { return _host; }
-    int Server::getPort() const { return _port; }
-    int Server::getFd() const { return _fd; }
-    int Server::getRequestUriLimitSize() const { return _request_uri_limit_size; }
-    int Server::getRequestHeaderLimitSize() const { return _request_header_limit_size; }
-    int Server::getLimitClientBodySize() const { return _limit_client_body_size; }
-    const std::string& Server::getDefaultErrorPage() const { return _default_error_page; }
-    Config* Server::getConfig() const { return _config; }
-    const std::vector<Location>& Server::getLocations() const { return _locations; }
+// const std::string& Server::getServerNames() const { return _server_names; }
+const std::string& Server::getHost() const { return _host; }
+int Server::getPort() const { return _port; }
+int Server::getFd() const { return _fd; }
+int Server::getRequestUriLimitSize() const { return _request_uri_limit_size; }
+int Server::getRequestHeaderLimitSize() const { return _request_header_limit_size; }
+int Server::getLimitClientBodySize() const { return _limit_client_body_size; }
+const std::string& Server::getDefaultErrorPage() const { return _default_error_page; }
+Config* Server::getConfig() const { return _config; }
+const std::vector<Location>& Server::getLocations() const { return _locations; }
+std::string Server::getRootPath() const { return _root_path;}
+std::vector<std::string> Server::getIndexFiles() const { return  _index_files;}
+bool Server::getAutoindex() const { return _autoindex ; }
+std::map<int, std::string> Server::getErrorPages() const { return _error_pages; }
+// Setter
+// void Server::setServerName(const std::string& name) { _server_name = name; }
+void Server::setHost(const std::string& host) { _host = host; }
+void Server::setPort(int port) { _port = port; }
+void Server::setFd(int fd) { _fd = fd; }
+void Server::setRequestUriLimitSize(int size) { _request_uri_limit_size = size; }
+void Server::setRequestHeaderLimitSize(int size) { _request_header_limit_size = size; }
+void Server::setLimitClientBodySize(int size) { _limit_client_body_size = size; }
+void Server::setDefaultErrorPage(const std::string& page) { _default_error_page = page; }
+void Server::setConfig(Config* config) { _config = config; }
+void Server::setLocations(const std::vector<Location>& locations) { _locations = locations; }
+void Server::setAutoindex(bool onoff) { _autoindex = onoff; }
 
-    // Setter
-    // void Server::setServerName(const std::string& name) { _server_name = name; }
-    void Server::setHost(const std::string& host) { _host = host; }
-    void Server::setPort(int port) { _port = port; }
-    void Server::setFd(int fd) { _fd = fd; }
-    void Server::setRequestUriLimitSize(int size) { _request_uri_limit_size = size; }
-    void Server::setRequestHeaderLimitSize(int size) { _request_header_limit_size = size; }
-    void Server::setLimitClientBodySize(int size) { _limit_client_body_size = size; }
-    void Server::setDefaultErrorPage(const std::string& page) { _default_error_page = page; }
-    void Server::setConfig(Config* config) { _config = config; }
-    void Server::setLocations(const std::vector<Location>& locations) { _locations = locations; }
+bool Server::hasUploadStore() const { return _has_upload_store; }
+std::string Server::getUploadStore() const { return _upload_store; }
+void Server::setHasUploadStore(bool has) { _has_upload_store = has; }
+void Server::setUploadStore(const std::string& path) { 
+    _upload_store = path;
+    _has_upload_store = true; 
+}

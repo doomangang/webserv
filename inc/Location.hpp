@@ -35,15 +35,15 @@ public:
     void setRootPath(const std::string& path);
 
     std::set<Method> getAllowMethods() const;
-    void setAllowMethods(std::set<Method>& methods);
+    void setAllowMethods(const std::set<Method>& methods);
     void addAllowMethod(Method m);
     void clearAllowMethods();
 
     std::set<std::string> getIndexFiles() const;
-    void setIndexFiles(std::vector<std::string>& files);
+    void setIndexFiles(const std::vector<std::string>& files);
 
     std::set<std::string> getCgiExtensions() const;
-    void setCgiExtensions(std::set<std::string>& exts);
+    void setCgiExtensions(const std::set<std::string>& exts);
 
     bool getAutoindex() const;
     void setAutoindex(bool onoff);

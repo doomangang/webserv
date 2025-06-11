@@ -176,12 +176,55 @@ std::string HttpUtils::getMimeType(const std::string& path) {
 
 //실행부 함수
 
-std::string Server::getErrorPage(int code) const {
-    std::map<int, std::string>::const_iterator it = _error_pages.find(code);
-    if (it != _error_pages.end()) {
-        return it->second;
+// std::string HttpUtils::getErrorPage(int code) const {
+//     std::map<int, std::string>::const_iterator it = _error_pages.find(code);
+//     if (it != _error_pages.end()) {
+//         return it->second;
+//     }
+//     return _default_error_page; 
+// }
+
+bool HttpUtils::fileExists(const std::string& path) {
+    struct stat st;
+    return stat(path.c_str(), &st) == 0;
+}
+
+bool HttpUtils::isDirectory(const std::string& path) {
+    struct stat st;
+    return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+std::string HttpUtils::readFile(const std::string& path) {
+    std::ifstream file(path.c_str(), std::ios::binary);
+    if (!file) return "";
+    
+    file.seekg(0, std::ios::end);
+    std::streampos size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    
+    std::string content(static_cast<size_t>(size), '\0');
+    file.read(&content[0], size);
+    return content;
+}
+
+std::vector<std::string> HttpUtils::listDirectory(const std::string& path) {
+    std::vector<std::string> entries;
+    DIR* dir = opendir(path.c_str());
+    if (!dir) return entries;
+    
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        std::string name = entry->d_name;
+        if (name != "." && name != "..") {
+            entries.push_back(name);
+        }
     }
-    return _default_error_page; 
+    closedir(dir);
+    return entries;
+}
+
+bool HttpUtils::isValidPort(int port) {
+    return port > 0 && port <= 65535;
 }
 
 // OCF (Orthodox Canonical Form) 생성자

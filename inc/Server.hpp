@@ -5,10 +5,13 @@
 
 #include "Webserv.hpp"
 #include "Location.hpp"
+#include "Server.hpp"
+#include "ServerManager.hpp"
+#include "Config.hpp"
 // #include "HttpUtils.hpp"
 
-class ServerManager;
-class Config;
+// class ServerManager;
+// class Config;
 // class Response;
 // class Request;
 
@@ -100,6 +103,7 @@ public:
     void setLocations(const std::vector<Location>& locations);
     void addLocation(const Location& loc);
     const Location& getMatchingLocation(std::string& uri) const;
+    const Location& getDefaultLocation() const;
 
     // Manager
     ServerManager* getManager() const;
@@ -160,7 +164,7 @@ public:
     // void setLocations(const std::vector<Location>& locations);
     // void addLocation(const Location& loc);
     // const Location& getMatchingLocation(std::string&) const;
-    const Location& getDefaultLocation() const;
+    // const Location& getDefaultLocation() const;
 
     // ServerManager* getManager() const;
     // void setManager(ServerManager* manager);

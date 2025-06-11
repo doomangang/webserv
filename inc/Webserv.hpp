@@ -80,21 +80,23 @@
 #define MAX_URI_LENGTH 4096
 #define MAX_CONTENT_LENGTH 30000000
 
-template <typename T>
-std::string toString(const T val)
-{
-    std::stringstream stream;
-    stream << val;
-    return stream.str();
-}
+
+/* 아래 함수들은 httpUtils.h 로 이동 */
+// template <typename T>
+// std::string toString(const T val)
+// {
+//     std::stringstream stream;
+//     stream << val;
+//     return stream.str();
+// }
 
 /* Utils.c */
 
-std::string statusCodeString(short);
-std::string getErrorPage(short);
-int buildHtmlIndex(std::string &, std::vector<uint8_t> &, size_t &);
-int ft_stoi(std::string str);
-unsigned int fromHexToDec(const std::string& nb);
+// std::string statusCodeString(short);
+// std::string getErrorPage(short);
+// int buildHtmlIndex(std::string &, std::vector<uint8_t> &, size_t &);
+// int ft_stoi(std::string str);
+// unsigned int fromHexToDec(const std::string& nb);
 
 
 #endif

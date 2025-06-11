@@ -139,7 +139,7 @@ bool Client::isMethodAllowed() const
     const std::set<Method>& allowed = location.getAllowMethods();
     
     for (std::set<Method>::const_iterator it = allowed.begin(); it != allowed.end(); ++it) {
-        if (*it == *(request.getMethod())) {
+        if (*it == request.getMethod()) {
             return true;
         }
     }
@@ -170,7 +170,27 @@ bool Client::isCGIRequest(const Location& location) const {
     return cgi_exts.count(extension) > 0;
 }
 
-void Client::handleCGI() {response.handleCgi(request);}
+void Client::handleCGI() {
+    std::string path = request.getPath();
+    const Location& location = server.getMatchingLocation(path);
+
+    response.setCgiState(1);
+
+    std::string file_path = resolveFilePath(location);
+    response._cgi_obj.setCgiPath(file_path);
+
+    // CGI 환경 변수 초기화 (임시로 빈 location iterator 전달)
+    // TODO: 실제 location iterator 구현 필요
+    // response._cgi_obj.initEnv(request, location_iterator);
+    
+    short error_code = 0;
+    response._cgi_obj.execute(error_code);
+    
+    if (error_code != 0) {
+        response.setCgiState(2); // CGI 실패
+        prepareErrorResponse(error_code);
+    }
+}
 
 std::string Client::resolveFilePath(const Location& location) const {
     std::string path = request.getPath();
