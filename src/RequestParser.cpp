@@ -114,6 +114,8 @@ void RequestParser::parseRequestLine(Request& request) {
     request.setUrl(parts[1]);
     request.parseUri();
 
+    request.setVersion(parts[2]);
+
     _raw_buffer.erase(0, pos + 2);
     _parse_state = REQUEST_LINE_COMPLETE;
 }
@@ -201,7 +203,9 @@ void RequestParser::validateHeaderValues(Request& request) {
     }
     
     // HTTP 버전 검증
-    if (request.getVersion() != "HTTP/1.1" && request.getVersion() != "HTTP/1.0") {
+    std::string version = request.getVersion();
+    
+    if (version != "HTTP/1.1" && version != "HTTP/1.0") {
         request.setErrorCode(505); // HTTP Version Not Supported
         _parse_state = BAD_REQUEST;
         return;
