@@ -20,7 +20,8 @@ SRCS    = main.cpp \
 		ResponseWriter.cpp \
 		RequestParser.cpp \
 		CgiHandler.cpp \
-		Client.cpp 
+		Client.cpp \
+		Logger.cpp 
 
 
 OBJS    = $(SRCS:.cpp=.o)

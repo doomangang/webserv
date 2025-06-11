@@ -32,7 +32,7 @@ void    Logger::logMsg(LogPrio p, Mode m, const char* msg, ...)
         else if (m == CONSOLE_OUTPUT)
         {
             if (p == DEBUG)
-                std::cout << LIGHTMAGENTA;
+                std::cout << MAGENTA;
             else if (p == INFO)
                 std::cout << CYAN;
             else if (p == ERROR)
