@@ -2,8 +2,11 @@
 # define SERVERMANAGER_HPP
 
 #include "Webserv.hpp"
-#include "Client.hpp"
-#include "Response.hpp"
+
+// Forward declarations to avoid circular includes
+class Client;
+class Server;
+class CgiHandler;
 
 /**
  * ServerManager

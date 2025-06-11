@@ -19,20 +19,30 @@ RequestParser::~RequestParser() {
 RequestParser::RequestParser(const RequestParser& copy) 
     : _parse_state(copy._parse_state),
       _max_body_size(copy._max_body_size),
+      _max_header_size(copy._max_header_size),
+      _raw_buffer(copy._raw_buffer),
+      _is_chunked(copy._is_chunked),
+      _chunk_state(copy._chunk_state),
+      _current_chunk_size(copy._current_chunk_size),
+      _current_chunk_received(copy._current_chunk_received),
       _expected_body_size(copy._expected_body_size),
       _received_body_size(copy._received_body_size),
-      _header_end_pos(copy._header_end_pos),
-      _raw_buffer(copy._raw_buffer) {
+      _header_end_pos(copy._header_end_pos) {
 }
 
 RequestParser& RequestParser::operator=(const RequestParser& rhs) {
     if (this != &rhs) {
         _parse_state = rhs._parse_state;
         _max_body_size = rhs._max_body_size;
+        _max_header_size = rhs._max_header_size;
+        _raw_buffer = rhs._raw_buffer;
+        _is_chunked = rhs._is_chunked;
+        _chunk_state = rhs._chunk_state;
+        _current_chunk_size = rhs._current_chunk_size;
+        _current_chunk_received = rhs._current_chunk_received;
         _expected_body_size = rhs._expected_body_size;
         _received_body_size = rhs._received_body_size;
         _header_end_pos = rhs._header_end_pos;
-        _raw_buffer = rhs._raw_buffer;
     }
     return *this;
 }

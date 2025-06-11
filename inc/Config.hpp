@@ -2,9 +2,10 @@
 #define CONFIG_HPP
 
 #include "Webserv.hpp"
-#include "Server.hpp"
 
+// Forward declarations to avoid circular includes  
 class ConfigParser;
+class Server;
 
 class Config {
 private:

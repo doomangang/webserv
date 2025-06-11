@@ -211,14 +211,12 @@ const Location& Server::getMatchingLocation(std::string& uri) const {
     // 가장 긴 매칭 prefix 찾기
     size_t best_match_len = 0;
     size_t best_match_idx = 0;
-    bool found = false;
     
     for (size_t i = 0; i < _locations.size(); ++i) {
         const std::string& loc_uri = _locations[i].getUri();
         if (uri.find(loc_uri) == 0 && loc_uri.length() > best_match_len) {
             best_match_idx = i;
             best_match_len = loc_uri.length();
-            found = true;
         }
     }
     
@@ -286,4 +284,13 @@ void Server::setHasUploadStore(bool has) { _has_upload_store = has; }
 void Server::setUploadStore(const std::string& path) { 
     _upload_store = path;
     _has_upload_store = true; 
+}
+
+// 누락된 메서드들 구현
+void Server::setRootPath(const std::string& path) {
+    _root_path = path;
+}
+
+void Server::setIndexFiles(const std::vector<std::string>& files) {
+    _index_files = files;
 }

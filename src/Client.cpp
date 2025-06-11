@@ -1,4 +1,6 @@
 #include "../inc/Client.hpp"
+#include "../inc/Server.hpp"
+#include "../inc/CgiHandler.hpp"
 #include <cstring>
 
 void	Client::readAndParse() {

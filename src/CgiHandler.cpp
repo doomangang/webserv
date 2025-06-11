@@ -1,4 +1,10 @@
 #include "../inc/CgiHandler.hpp"
+#include "../inc/Request.hpp"
+#include "../inc/Location.hpp"
+
+// Forward declarations for utility functions
+char fromHexToDec(const std::string& hex);
+std::string toString(char c);
 
 /* Constructor */
 CgiHandler::CgiHandler() {
@@ -86,9 +92,10 @@ const std::string &CgiHandler::getCgiPath() const
     return (this->_cgi_path);
 }
 
-void CgiHandler::initEnvCgi(Request& req, const std::vector<Location>::iterator it_loc)
+void CgiHandler::initEnvCgi(Request& req, const std::vector<Location>::iterator)
 {
-	std::string cgi_exec = ("cgi-bin/" + it_loc->getCgiPath()[0]).c_str();
+	// 임시로 기본 CGI 실행파일 경로 사용
+	std::string cgi_exec = "cgi-bin/script";
 	char    *cwd = getcwd(NULL, 0);
 	if(_cgi_path[0] != '/')
 	{
@@ -114,7 +121,7 @@ void CgiHandler::initEnvCgi(Request& req, const std::vector<Location>::iterator 
     this->_env["REQUEST_URI"] = this->_cgi_path;//
     this->_env["SERVER_NAME"] = req.getHeaderValue("host");
     this->_env["SERVER_PORT"] ="8002";
-    this->_env["REQUEST_METHOD"] = req.getMethod();
+    this->_env["REQUEST_METHOD"] = req.getMethodStr();
     this->_env["SERVER_PROTOCOL"] = "HTTP/1.1";
     this->_env["REDIRECT_STATUS"] = "200";
 	this->_env["SERVER_SOFTWARE"] = "AMANIX";
@@ -150,10 +157,8 @@ void CgiHandler::initEnv(Request& req, const std::vector<Location>::iterator it_
 	std::string ext_path;
 
 	extension = this->_cgi_path.substr(this->_cgi_path.find("."));
-	std::map<std::string, std::string>::iterator it_path = it_loc->_ext_path.find(extension);
-    if (it_path == it_loc->_ext_path.end())
-        return ;
-    ext_path = it_loc->_ext_path[extension];
+	// 임시로 기본 CGI 경로 사용 (_ext_path 멤버가 없으므로)
+	ext_path = "/usr/bin/php"; // 또는 적절한 기본값
 
 	this->_env["AUTH_TYPE"] = "Basic";
 	this->_env["CONTENT_LENGTH"] = req.getHeaderValue("content-length");
@@ -162,8 +167,8 @@ void CgiHandler::initEnv(Request& req, const std::vector<Location>::iterator it_
 	poz = findStart(this->_cgi_path, "cgi-bin/");
 	this->_env["SCRIPT_NAME"] = this->_cgi_path;
     this->_env["SCRIPT_FILENAME"] = ((poz < 0 || (size_t)(poz + 8) > this->_cgi_path.size()) ? "" : this->_cgi_path.substr(poz + 8, this->_cgi_path.size())); // check dif cases after put right parametr from the response
-    this->_env["PATH_INFO"] = getPathInfo(req.getPath(), it_loc->getCgiExtension());
-    this->_env["PATH_TRANSLATED"] = it_loc->getRootLocation() + (this->_env["PATH_INFO"] == "" ? "/" : this->_env["PATH_INFO"]);
+    this->_env["PATH_INFO"] = getPathInfo(req.getPath(), std::vector<std::string>(1, extension));
+    this->_env["PATH_TRANSLATED"] = it_loc->getRootPath() + (this->_env["PATH_INFO"] == "" ? "/" : this->_env["PATH_INFO"]);
     this->_env["QUERY_STRING"] = decode(req.getQuery());
     this->_env["REMOTE_ADDR"] = req.getHeaderValue("host");
 	poz = findStart(req.getHeaderValue("host"), ":");
@@ -171,7 +176,7 @@ void CgiHandler::initEnv(Request& req, const std::vector<Location>::iterator it_
     this->_env["SERVER_PORT"] = (poz > 0 ? req.getHeaderValue("host").substr(poz + 1, req.getHeaderValue("host").size()) : "");
     this->_env["REQUEST_METHOD"] = req.getMethodStr();
     this->_env["HTTP_COOKIE"] = req.getHeaderValue("cookie");
-    this->_env["DOCUMENT_ROOT"] = it_loc->getRootLocation();
+    this->_env["DOCUMENT_ROOT"] = it_loc->getRootPath();
 	this->_env["REQUEST_URI"] = req.getPath() + req.getQuery();
     this->_env["SERVER_PROTOCOL"] = "HTTP/1.1";
     this->_env["REDIRECT_STATUS"] = "200";
@@ -234,7 +239,7 @@ void CgiHandler::execute(short &error_code)
 	}
 }
 
-int CgiHandler::findStart(const std::string path, const std::string delim)
+int CgiHandler::findStart(const std::string& path, const std::string& delim)
 {
 	if (path.empty())
 		return (-1);
@@ -246,27 +251,28 @@ int CgiHandler::findStart(const std::string path, const std::string delim)
 }
 
 /* Translation of parameters for QUERY_STRING environment variable */
-std::string CgiHandler::decode(std::string &path)
+std::string CgiHandler::decode(const std::string& path)
 {
-	size_t token = path.find("%");
+	std::string result = path; // 복사본을 만들어서 수정
+	size_t token = result.find("%");
 	while (token != std::string::npos)
 	{
-		if (path.length() < token + 2)
+		if (result.length() < token + 2)
 			break ;
-		char decimal = fromHexToDec(path.substr(token + 1, 2));
-		path.replace(token, 3, toString(decimal));
-		token = path.find("%");
+		char decimal = fromHexToDec(result.substr(token + 1, 2));
+		result.replace(token, 3, HttpUtils::toString(decimal));
+		token = result.find("%");
 	}
-	return (path);
+	return (result);
 }
 
 /* Isolation PATH_INFO environment variable */
-std::string CgiHandler::getPathInfo(std::string& path, std::vector<std::string> extensions)
+std::string CgiHandler::getPathInfo(const std::string& path, const std::vector<std::string>& extensions)
 {
 	std::string tmp;
 	size_t start, end;
 
-	for (std::vector<std::string>::iterator it_ext = extensions.begin(); it_ext != extensions.end(); it_ext++)
+	for (std::vector<std::string>::const_iterator it_ext = extensions.begin(); it_ext != extensions.end(); ++it_ext)
 	{
 		start = path.find(*it_ext);
 		if (start != std::string::npos)
@@ -291,4 +297,25 @@ void		CgiHandler::clear()
 	this->_ch_env = NULL;
 	this->_argv = NULL;
 	this->_env.clear();
+}
+
+// Utility function implementations
+char fromHexToDec(const std::string& hex) {
+    if (hex.length() != 2) return 0;
+    int result = 0;
+    for (size_t i = 0; i < 2; ++i) {
+        char c = hex[i];
+        if (c >= '0' && c <= '9') {
+            result = result * 16 + (c - '0');
+        } else if (c >= 'A' && c <= 'F') {
+            result = result * 16 + (c - 'A' + 10);
+        } else if (c >= 'a' && c <= 'f') {
+            result = result * 16 + (c - 'a' + 10);
+        }
+    }
+    return static_cast<char>(result);
+}
+
+std::string toString(char c) {
+    return std::string(1, c);
 }

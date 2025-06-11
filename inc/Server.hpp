@@ -5,13 +5,10 @@
 
 #include "Webserv.hpp"
 #include "Location.hpp"
-#include "Server.hpp"
-#include "ServerManager.hpp"
-#include "Config.hpp"
 // #include "HttpUtils.hpp"
 
-// class ServerManager;
-// class Config;
+class ServerManager;
+class Config;
 // class Response;
 // class Request;
 

@@ -108,7 +108,7 @@ void Location::clearAllowMethods() { _allow_methods.clear(); }
 
 void Location::setIndexFiles(const std::vector<std::string>& files) {
 	_index_files.clear();
-	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it) {
+	for (std::vector<std::string>::const_iterator it = files.begin(); it != files.end(); ++it) {
 		_index_files.insert(*it);
 	}
 }

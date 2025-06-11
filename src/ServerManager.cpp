@@ -1,4 +1,6 @@
 # include "../inc/ServerManager.hpp"
+# include "../inc/Client.hpp"
+# include "../inc/Server.hpp"
 
 ServerManager::ServerManager(){}
 ServerManager::~ServerManager(){}
@@ -288,7 +290,7 @@ void    ServerManager::handleReqBody(Client &c)
 void    ServerManager::sendCgiBody(Client &c, CgiHandler &cgi)
 {
     int bytes_sent;
-    const std::string &req_body = c.request.getBody();
+    std::string req_body = c.request.getBody();
 
     if (req_body.empty())
         bytes_sent = 0;
@@ -315,6 +317,7 @@ void    ServerManager::sendCgiBody(Client &c, CgiHandler &cgi)
     {
         c.updateTime();
         req_body = req_body.substr(bytes_sent);
+        c.request.setBody(req_body); // Update the request body
     }
 }
 
@@ -374,7 +377,7 @@ void	ServerManager::removeFromSet(const int i, fd_set &set)
     {
         _biggest_fd = 0;
         for(int j=0; j < i; ++j) {
-            if(FD_ISSET(j, _recv_fd_pool) || FD_ISSET(j, _write_fd_pool))
+            if(FD_ISSET(j, &_recv_fd_pool) || FD_ISSET(j, &_write_fd_pool))
                 _biggest_fd = j;
         }
     }

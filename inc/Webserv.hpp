@@ -59,6 +59,8 @@
 # include "HttpTypes.hpp"
 
 /* Color Sets */
+#ifndef COLORS_DEFINED
+#define COLORS_DEFINED
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"
 #define RED     "\033[31m"
@@ -69,6 +71,7 @@
 #define CYAN    "\033[36m"
 #define WHITE   "\033[37m"
 #define GREY    "\033[38;5;250m"
+#endif
 
 #define CONNECTION_TIMEOUT 60 // Time in seconds before client get kicked out if no data was sent.
 #ifdef TESTER

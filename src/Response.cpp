@@ -1,4 +1,5 @@
 #include "../inc/Response.hpp"
+#include "../inc/Server.hpp"
 
 // OCF
 
