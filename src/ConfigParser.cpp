@@ -513,17 +513,69 @@ void ConfigParser::validateServerBlock(const Server& srv) {
         throw MissingDirectiveException("listen");
     }
     validatePort(srv.getPort());
-    
-    if (srv.getRootPath().empty()) {
-        throw MissingDirectiveException("root");
-    }
-    validatePath(srv.getRootPath());
+
+    validateRootConfiguration(srv);
     
     // 각 location 검증
     const std::vector<Location>& locations = srv.getLocations();
     for (size_t i = 0; i < locations.size(); ++i) {
         if (!locations[i].getRootPath().empty()) {
             validatePath(locations[i].getRootPath());
+        }
+    }
+
+    if (!srv.getRootPath().empty()) {
+        validatePath(srv.getRootPath());
+    }
+}
+
+void ConfigParser::validateRootConfiguration(const Server& srv) {
+    bool server_has_root = !srv.getRootPath().empty();
+    const std::vector<Location>& locations = srv.getLocations();
+    
+    // Case 1: Location이 없는 경우 - 서버 레벨에 root 필수
+    if (locations.empty()) {
+        if (!server_has_root) {
+            throw MissingDirectiveException("root (required at server level when no locations defined)");
+        }
+        return;
+    }
+    
+    // Case 2: Location들이 있는 경우 - 각각이 root를 해결할 수 있는지 확인
+    std::vector<std::string> problematic_locations;
+    
+    for (size_t i = 0; i < locations.size(); ++i) {
+        const Location& loc = locations[i];
+        bool location_has_root = !loc.getRootPath().empty();
+        
+        // 이 location이 root 경로를 결정할 수 있는가?
+        if (!location_has_root && !server_has_root) {
+            problematic_locations.push_back(loc.getUri());
+        }
+    }
+    
+    // 문제가 있는 location들 리포트
+    if (!problematic_locations.empty()) {
+        std::string error_msg = "missing root directive for location(s): ";
+        for (size_t i = 0; i < problematic_locations.size(); ++i) {
+            if (i > 0) error_msg += ", ";
+            error_msg += "'" + problematic_locations[i] + "'";
+        }
+        error_msg += " (provide server-level root or location-specific root)";
+        
+        throw MissingDirectiveException(error_msg);
+    }
+    
+    std::cout << GREEN << "Root configuration validated successfully:" << RESET << std::endl;
+    if (server_has_root) {
+        std::cout << "  Server root: " << srv.getRootPath() << std::endl;
+    }
+    for (size_t i = 0; i < locations.size(); ++i) {
+        const Location& loc = locations[i];
+        if (!loc.getRootPath().empty()) {
+            std::cout << "  Location " << loc.getUri() << " root: " << loc.getRootPath() << std::endl;
+        } else {
+            std::cout << "  Location " << loc.getUri() << " root: (inherited from server)" << std::endl;
         }
     }
 }

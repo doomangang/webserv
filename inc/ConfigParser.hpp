@@ -37,6 +37,7 @@ private:
     void validatePath(const std::string& path);
     void validateBodySize(size_t size);
     void validateServerBlock(const Server& srv);
+    void validateRootConfiguration(const Server& srv);
 
 public:
     /* Orthodox Canonical Form (OCF) */

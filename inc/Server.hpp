@@ -73,6 +73,7 @@ public:
     void setRootPath(const std::string& path);
     std::vector<std::string> getIndexFiles() const;
     void setIndexFiles(const std::vector<std::string>& files);
+    std::string resolveRootPath(const Location&) const;
 
     // Autoindex
     bool getAutoindex() const;

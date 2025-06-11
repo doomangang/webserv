@@ -294,3 +294,15 @@ void Server::setRootPath(const std::string& path) {
 void Server::setIndexFiles(const std::vector<std::string>& files) {
     _index_files = files;
 }
+
+std::string Server::resolveRootPath(const Location& location) const {
+    if (!location.getRootPath().empty()) {
+        return location.getRootPath();
+    }
+    
+    if (!_root_path.empty()) {
+        return _root_path;
+    }
+    
+    throw std::runtime_error("No root path available for location: " + location.getUri());
+}
