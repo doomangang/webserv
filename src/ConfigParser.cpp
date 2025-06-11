@@ -2,15 +2,6 @@
 
 #include "../inc/ConfigParser.hpp"
 
-#include <sys/stat.h>
-#include <fstream>
-#include <sstream>
-#include <iterator>
-#include <algorithm>
-#include <set>
-#include <cstdlib> 
-#include <stdexcept> 
-
 ConfigParser::ConfigParser() {}
 
 ConfigParser::ConfigParser(const ConfigParser& other) {

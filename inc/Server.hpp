@@ -4,22 +4,18 @@
 #define SERVER_HPP
 
 #include "Webserv.hpp"
-#include "ServerManager.hpp"
-#include "Config.hpp"
 #include "Location.hpp"
-#include "Connection.hpp"
+// #include "HttpUtils.hpp"
 
 class ServerManager;
 class Config;
-class Location;
-class Connection;
-class Response;
-class Request;
+// class Response;
+// class Request;
 
 class Server {
 private:
     /* member attributes */
-    ServerManager*              _manager;
+    ServerManager* _manager;
     std::vector<std::string>    _server_names;
     std::string                 _host;
     int                         _port;
@@ -27,108 +23,147 @@ private:
     int                         _request_uri_limit_size;
     int                         _request_header_limit_size;
     int                         _limit_client_body_size;
-    std::string                 _root_path;             // 새로 추가
-    std::vector<std::string>    _index_files;           // 새로 추가
-    bool                        _autoindex;             // 새로 추가
-    std::string                 _upload_store;          // 새로 추가
-    bool                        _has_upload_store;      // 새로 추가
+    std::string                 _root_path;
+    std::vector<std::string>    _index_files;
+    bool                        _autoindex;
+    std::string                 _upload_store;
+    bool                        _has_upload_store;
     std::string                 _default_error_page;
     std::map<int, std::string>  _error_pages;
     Config*                     _config;
     std::vector<Location>       _locations;
-    std::map<int, Connection>   _connections;
-    std::queue<Response>        _responses;
 
 public:
     /* Orthodox Canonical Form (OCF) */
     Server();
-    Server(ServerManager*, const std::string& server_block, const std::string& location_blocks, Config*);
+    Server(ServerManager*, const std::string&, const std::string&, Config*);
     Server(const Server& other);
     ~Server();
     Server& operator=(const Server& other);
 
-    /* getter & setter */
+    /* Core Methods */
+    void   	setupServer();
 
+    /* Getter & Setter */
+    // Server Names
     std::vector<std::string> getServerNames() const;
     void setServerNames(const std::vector<std::string>&);
     void addServerName(const std::string& name);
 
-    std::string getHost() const;
+    // Host & Port
+    const std::string& getHost() const;
     void setHost(const std::string& host);
-    // Getter
-    const std::string& getServerName() const { return _server_name; }
-    const std::string& getHost() const { return _host; }
-    int getPort() const { return _port; }
-    int getFd() const { return _fd; }
-    int getRequestUriLimitSize() const { return _request_uri_limit_size; }
-    int getRequestHeaderLimitSize() const { return _request_header_limit_size; }
-    int getLimitClientBodySize() const { return _limit_client_body_size; }
-    const std::string& getDefaultErrorPage() const { return _default_error_page; }
-    Config* getConfig() const { return _config; }
-    const std::vector<Location>& getLocations() const { return _locations; }
-
-    // Setter
-    void setServerName(const std::string& name) { _server_name = name; }
-    void setHost(const std::string& host) { _host = host; }
-    void setPort(int port) { _port = port; }
-    void setFd(int fd) { _fd = fd; }
-    void setRequestUriLimitSize(int size) { _request_uri_limit_size = size; }
-    void setRequestHeaderLimitSize(int size) { _request_header_limit_size = size; }
-    void setLimitClientBodySize(int size) { _limit_client_body_size = size; }
-    void setDefaultErrorPage(const std::string& page) { _default_error_page = page; }
-    void setConfig(Config* config) { _config = config; }
-    void setLocations(const std::vector<Location>& locations) { _locations = locations; }
-
-	/* additional methods */
-	void   	setupServer();
-
     int getPort() const;
     void setPort(int port);
 
+    // File Descriptor
     int getFd() const;
     void setFd(int fd);
 
+    // Limits
     int getRequestUriLimitSize() const;
     void setRequestUriLimitSize(int size);
-
     int getRequestHeaderLimitSize() const;
     void setRequestHeaderLimitSize(int size);
-
     int getLimitClientBodySize() const;
     void setLimitClientBodySize(int size);
 
+    // Path & Index
     std::string getRootPath() const;
     void setRootPath(const std::string& path);
-
     std::vector<std::string> getIndexFiles() const;
     void setIndexFiles(const std::vector<std::string>& files);
 
+    // Autoindex
     bool getAutoindex() const;
     void setAutoindex(bool onoff);
 
+    // Upload
     bool hasUploadStore() const;
     std::string getUploadStore() const;
     void setHasUploadStore(bool has);
     void setUploadStore(const std::string& path);
 
-    // std::string getDefaultErrorPage() const;
+    // Error Pages
+    const std::string& getDefaultErrorPage() const;
     void setDefaultErrorPage(const std::string& page);
-
     void addErrorPage(int code, const std::string& path);
     std::string getErrorPage(int code) const;
     std::map<int, std::string> getErrorPages() const;
     
+    // Config
     Config* getConfig() const;
     void setConfig(Config* config);
 
+    // Locations
     const std::vector<Location>& getLocations() const;
     void setLocations(const std::vector<Location>& locations);
     void addLocation(const Location& loc);
-    const Location& getMatchingLocation(std::string&) const;
-    const Location& getDefaultLocation() const;
+    const Location& getMatchingLocation(std::string& uri) const;
 
+    // Manager
     ServerManager* getManager() const;
     void setManager(ServerManager* manager);
+
+    // /* getter & setter */
+
+    // std::vector<std::string> getServerNames() const;
+    // void setServerNames(const std::vector<std::string>&);
+    // void addServerName(const std::string& name);
+
+    // std::string getHost() const;
+    // void setHost(const std::string& host);
+
+	// /* additional methods */
+	// void   	setupServer();
+
+    // int getPort() const;
+    // void setPort(int port);
+
+    // int getFd() const;
+    // void setFd(int fd);
+
+    // int getRequestUriLimitSize() const;
+    // void setRequestUriLimitSize(int size);
+
+    // int getRequestHeaderLimitSize() const;
+    // void setRequestHeaderLimitSize(int size);
+
+    // int getLimitClientBodySize() const;
+    // void setLimitClientBodySize(int size);
+
+    // std::string getRootPath() const;
+    // void setRootPath(const std::string& path);
+
+    // std::vector<std::string> getIndexFiles() const;
+    // void setIndexFiles(const std::vector<std::string>& files);
+
+    // bool getAutoindex() const;
+    // void setAutoindex(bool onoff);
+
+    // bool hasUploadStore() const;
+    // std::string getUploadStore() const;
+    // void setHasUploadStore(bool has);
+    // void setUploadStore(const std::string& path);
+
+    // // std::string getDefaultErrorPage() const;
+    // void setDefaultErrorPage(const std::string& page);
+
+    // void addErrorPage(int code, const std::string& path);
+    // std::string getErrorPage(int code) const;
+    // std::map<int, std::string> getErrorPages() const;
+    
+    // Config* getConfig() const;
+    // void setConfig(Config* config);
+
+    // const std::vector<Location>& getLocations() const;
+    // void setLocations(const std::vector<Location>& locations);
+    // void addLocation(const Location& loc);
+    // const Location& getMatchingLocation(std::string&) const;
+    const Location& getDefaultLocation() const;
+
+    // ServerManager* getManager() const;
+    // void setManager(ServerManager* manager);
 
 	/* exception classes */
 };
