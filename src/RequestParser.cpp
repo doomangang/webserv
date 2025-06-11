@@ -63,6 +63,10 @@ ParseState RequestParser::getParseState() const {
     return _parse_state;
 }
 
+void RequestParser::setParseState(ParseState state) {
+    _parse_state = state;
+}
+
 bool RequestParser::isRequestLineComplete() const {
     return _parse_state >= REQUEST_LINE_COMPLETE;
 }

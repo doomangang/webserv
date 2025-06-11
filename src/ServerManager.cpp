@@ -141,7 +141,8 @@ void    ServerManager::acceptNewConnection(Server &serv)
 {
     struct sockaddr_in client_address;
     long  client_address_size = sizeof(client_address);
-    int client_sock;
+    int client_sock = 0;
+    printf("[DBG] Accepted socket = %d\n", client_sock);
     char buf[INET_ADDRSTRLEN];
 
     if ( (client_sock = accept(serv.getFd(), (struct sockaddr *)&client_address,
@@ -263,12 +264,18 @@ void    ServerManager::sendResponse(const int &i, Client &c)
  */
 void    ServerManager::readRequest(const int &i, Client &c)
 {
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "readRequest() called for %s\n", strerror(i));
     c.readAndParse();
 
-    if (c.isParseComplete())
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT,
+        "    parseComplete= %d, hasError=%d", c.isParseComplete()
+        ,c.getRequest().hasError());
+    if (c.isParseComplete() || c.getRequest().hasError())
     {
         if (!c.request.hasError())
             c.findSetConfigs(_servers);
+        else
+            c.prepareErrorResponse(c.request.getErrorCode());
         
         removeFromSet(i, _recv_fd_pool);
         addToSet(i, _write_fd_pool);

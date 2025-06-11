@@ -35,6 +35,7 @@ public:
     bool        isBadRequest()          const;
     TransferType isChunked()            const;
     ParseState  getParseState()         const;
+    void        setParseState(ParseState state);
 
     /* raw buffer access */
     std::string& getRawBuffer();
