@@ -285,7 +285,7 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
         }
         else if (HttpUtils::dirExists(stmt,"client_max_body_size")) {
             // e.g. "client_max_body_size 1000000"
-            std::string num = stmt.substr(22);
+            std::string num = stmt.substr(21);
             HttpUtils::trim(num);
             srv.setLimitClientBodySize(static_cast<size_t>(std::atoi(num.c_str())));
         }
@@ -302,13 +302,18 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
             // e.g. "autoindex on"/"autoindex off"
             std::string onoff = stmt.substr(10);
             HttpUtils::trim(onoff);
-            srv.setAutoindex(onoff == "on");
+            srv.setAutoindex(HttpUtils::toLowerCase(onoff) == "on");
         }
         else if (HttpUtils::dirExists(stmt, "upload_store")) {
             // e.g. "upload_store /tmp/uploads"
             std::string up = stmt.substr(13);
             HttpUtils::trim(up);
             srv.setUploadStore(up);
+        }
+        else if (HttpUtils::dirExists(stmt, "filepath")) {
+            std::string filepath = stmt.substr(9);
+            HttpUtils::trim(filepath);
+            srv.setUploadStore(filepath);
         }
         // unknown server-level directives are ignored
     }
@@ -368,13 +373,21 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
         else if (HttpUtils::dirExists(stmt, "autoindex")) {
             parseAutoindexDirective(loc, stmt);
         }
-        else if (HttpUtils::dirExists(stmt, "cgi")) {
+        else if (HttpUtils::dirExists(stmt, "cgi_path")) {
             parseCgiDirective(loc, stmt);
+        }
+        else if (HttpUtils::dirExists(stmt, "cgi_ext")) {
+            parseCgiExtension(loc, stmt);
         }
         else if (HttpUtils::dirExists(stmt, "upload_store")) {
             parseUploadStoreDirective(loc, stmt);
         }
-        // 그 외 지시자는 무시
+        else if (HttpUtils::dirExists(stmt,"client_body_size")) {
+            std::string num = stmt.substr(17);
+            HttpUtils::trim(num);
+            loc.setClientBodySize(static_cast<size_t>(std::atoi(num.c_str())));
+        }
+        // 그 외 지시자는 무시 (Path, alias,cgipath cgi ext)
     }
 
     // 5) Default methods 설정 (GET, POST, DELETE)
@@ -468,14 +481,20 @@ void ConfigParser::parseAutoindexDirective(Location& loc, const std::string& stm
     // "autoindex on" or "autoindex off"
     std::string onoff = stmt.substr(10);
     HttpUtils::trim(onoff);
-    loc.setAutoindex(onoff == "on");
+    loc.setAutoindex(HttpUtils::toLowerCase(onoff) == "on");
+}
+
+void ConfigParser::parseCgiExtension(Location& loc, const std::string& stmt) {
+    // "cgi .php .py"
+    std::vector<std::string> exts = HttpUtils::splitWords(stmt.substr(8));
+    std::set<std::string> s(exts.begin(), exts.end());
+    loc.setCgiExtensions(s);
 }
 
 void ConfigParser::parseCgiDirective(Location& loc, const std::string& stmt) {
-    // "cgi .php .py"
-    std::vector<std::string> exts = HttpUtils::splitWords(stmt.substr(4));
+    std::vector<std::string> exts = HttpUtils::splitWords(stmt.substr(9));
     std::set<std::string> s(exts.begin(), exts.end());
-    loc.setCgiExtensions(s);
+    loc.setCgiPath(s);
 }
 
 void ConfigParser::parseUploadStoreDirective(Location& loc, const std::string& stmt) {

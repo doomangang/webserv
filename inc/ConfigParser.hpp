@@ -30,6 +30,7 @@ private:
     void                        parseIndexDirective(Location& loc, const std::string& stmt);
     void                        parseAutoindexDirective(Location& loc, const std::string& stmt);
     void                        parseCgiDirective(Location& loc, const std::string& stmt);
+    void                        parseCgiExtension(Location& loc, const std::string& stmt);
     void                        parseUploadStoreDirective(Location& loc, const std::string& stmt);
     void                        parseReturnDirective(Location& loc, const std::string& stmt);
 

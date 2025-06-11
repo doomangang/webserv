@@ -87,6 +87,18 @@ Method HttpUtils::stringToMethod(const std::string& method_str) {
     return UNKNOWN_METHOD;
 }
 
+std::string HttpUtils::methodToString(Method m) {
+    switch (m) {
+        case GET:    return "GET";
+        case POST:   return "POST";
+        case DELETE: return "DELETE";
+        case PUT:    return "PUT";
+        case HEAD:   return "HEAD";
+        case EMPTY:  return "EMPTY";
+        default:     return "UNKNOWN";
+    }
+}
+
 std::string HttpUtils::urlDecode(const std::string& str) {
     std::string result;
     for (size_t i = 0; i < str.length(); ++i) {

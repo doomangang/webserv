@@ -18,7 +18,6 @@ Location::Location()
 {
 }
 
-/* location_block 기반 생성자(필요하다면 파싱 로직을 추가) */
 Location::Location(const std::string& location_block)
 	: _uri(""),
 	  _root_path(""),
@@ -31,7 +30,7 @@ Location::Location(const std::string& location_block)
 	  _redirect_url(""),
 	  _has_upload_store(false),
 	  _upload_store()
-{ // TODO: location_block 파싱 로직이 필요한 경우 여기에 추가
+{
 	(void)location_block; }
 
 /* 복사 생성자 */
@@ -82,6 +81,7 @@ std::set<Method> Location::getAllowMethods() const { return _allow_methods; }
 std::set<std::string> Location::getIndexFiles() const { return _index_files; }
 
 std::set<std::string> Location::getCgiExtensions() const { return _cgi_extensions; }
+std::set<std::string> Location::getCgiPath() const { return _cgi_path; }
 
 bool Location::getAutoindex() const { return _autoindex; }
 
@@ -114,6 +114,7 @@ void Location::setIndexFiles(const std::vector<std::string>& files) {
 }
 
 void Location::setCgiExtensions(const std::set<std::string>& exts) { _cgi_extensions = exts; }
+void Location::setCgiPath(const std::set<std::string>& exts) { _cgi_path = exts; }
 
 void Location::setAutoindex(bool onoff) { _autoindex = onoff; }
 
@@ -129,3 +130,6 @@ void Location::setUploadStore(const std::string& path) {
 	_has_upload_store = true;
 	_upload_store     = path; 
 }
+
+int Location::getClientBodySize() const { return _client_body_size; }
+void Location::setClientBodySize(int size) { _client_body_size = size; }

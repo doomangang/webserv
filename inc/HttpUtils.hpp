@@ -22,6 +22,7 @@ public:
     static bool         dirExists(std::string&, std::string);
     
     static Method      stringToMethod(const std::string& method_str);
+    static std::string methodToString(Method m);
     static std::string toLowerCase(const std::string& str);
     static std::string urlDecode(const std::string& str);
     static std::string urlEncode(const std::string& str);

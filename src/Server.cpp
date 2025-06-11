@@ -74,10 +74,7 @@ Server::Server(const Server& other)
 {
 }
 
-/* 소멸자 */
-Server::~Server() {
-    // 특별히 해제해야 할 리소스가 있으면 여기에 추가
-}
+Server::~Server() {}
 
 /* 대입 연산자 */
 Server& Server::operator=(const Server& other) {

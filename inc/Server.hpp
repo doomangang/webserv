@@ -19,7 +19,7 @@ private:
     std::vector<std::string>    _server_names;
     std::string                 _host;
     int                         _port;
-    int                         _fd;
+    int                         _fd; //
     int                         _request_uri_limit_size;
     int                         _request_header_limit_size;
     int                         _limit_client_body_size;
@@ -32,6 +32,7 @@ private:
     std::map<int, std::string>  _error_pages;
     Config*                     _config;
     std::vector<Location>       _locations;
+    
 
 public:
     /* Orthodox Canonical Form (OCF) */
