@@ -253,7 +253,7 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
         HttpUtils::trim(stmt);
         if (stmt.empty()) continue;
 
-        if (stmt.find("listen ") == 0) {
+        if (HttpUtils::dirExists(stmt, "listen")) {
             // "listen host:port" or "listen port"
             std::string args = stmt.substr(7);
             HttpUtils::trim(args);
@@ -267,29 +267,29 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
                 srv.setPort(static_cast<unsigned short>(std::atoi(args.c_str())));
             }
         }
-        else if (stmt.find("server_name ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "server_name")) {
             // e.g. "server_name a.com b.com"
             std::vector<std::string> names = HttpUtils::splitWords(stmt.substr(12));
             srv.setServerNames(names);
         }
-        else if (stmt.find("root ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "root")) {
             // e.g. "root /var/www"
             std::string path = stmt.substr(5);
             HttpUtils::trim(path);
             srv.setRootPath(path);
         }
-        else if (stmt.find("index ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "index")) {
             // e.g. "index index.html index.htm"
             std::vector<std::string> files = HttpUtils::splitWords(stmt.substr(6));
             srv.setIndexFiles(files);
         }
-        else if (stmt.find("client_max_body_size ") == 0) {
+        else if (HttpUtils::dirExists(stmt,"client_max_body_size")) {
             // e.g. "client_max_body_size 1000000"
             std::string num = stmt.substr(22);
             HttpUtils::trim(num);
             srv.setLimitClientBodySize(static_cast<size_t>(std::atoi(num.c_str())));
         }
-        else if (stmt.find("error_page ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "error_page")) {
             // e.g. "error_page 404 /404.html"
             std::vector<std::string> parts = HttpUtils::splitWords(stmt.substr(11));
             if (parts.size() >= 2) {
@@ -298,13 +298,13 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
                 srv.addErrorPage(code, path);
             }
         }
-        else if (stmt.find("autoindex ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "autoindex")) {
             // e.g. "autoindex on"/"autoindex off"
             std::string onoff = stmt.substr(10);
             HttpUtils::trim(onoff);
             srv.setAutoindex(onoff == "on");
         }
-        else if (stmt.find("upload_store ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "upload_store")) {
             // e.g. "upload_store /tmp/uploads"
             std::string up = stmt.substr(13);
             HttpUtils::trim(up);
@@ -353,25 +353,25 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
         HttpUtils::trim(stmt);
         if (stmt.empty()) continue;
 
-        if (stmt.find("methods ") == 0) {
+        if (HttpUtils::dirExists(stmt, "methods")) {
             parseMethodsDirective(loc, stmt);
         }
-        else if (stmt.find("return ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "return")) {
             parseReturnDirective(loc, stmt);
         }
-        else if (stmt.find("root ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "root")) {
             parseRootDirective(loc, stmt);
         }
-        else if (stmt.find("index ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "index")) {
             parseIndexDirective(loc, stmt);
         }
-        else if (stmt.find("autoindex ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "autoindex")) {
             parseAutoindexDirective(loc, stmt);
         }
-        else if (stmt.find("cgi ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "cgi")) {
             parseCgiDirective(loc, stmt);
         }
-        else if (stmt.find("upload_store ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "upload_store")) {
             parseUploadStoreDirective(loc, stmt);
         }
         // 그 외 지시자는 무시

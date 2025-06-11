@@ -31,16 +31,18 @@ std::vector<std::string> HttpUtils::split(const std::string& str, char delimiter
 
 std::vector<std::string> HttpUtils::splitBySemicolon(const std::string& s) {
     std::vector<std::string> parts;
-    size_t start = 0, pos = 0;
+    size_t start = 0;
 
-    while (pos < s.size()) {
-        if (s[pos] == ';') {
-            std::string token = s.substr(start, pos - start);
-            parts.push_back(token);
-            start = pos + 1;
+    while (true) {
+        size_t pos = s.find(';', start);
+        if (pos == std::string::npos) {
+            parts.push_back(s.substr(start));
+            break;
         }
-        pos++;
+        parts.push_back(s.substr(start, pos - start));
+        start = pos + 1;
     }
+
     return parts;
 }
 
@@ -225,6 +227,15 @@ std::vector<std::string> HttpUtils::listDirectory(const std::string& path) {
 
 bool HttpUtils::isValidPort(int port) {
     return port > 0 && port <= 65535;
+}
+
+
+bool HttpUtils::dirExists(std::string& str, std::string dir) {
+    std::vector<std::string> token = splitWords(str);
+    std::string directory(dir);
+    if (token.front() == directory)
+        return true;
+    return false;
 }
 
 // OCF (Orthodox Canonical Form) 생성자

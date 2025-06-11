@@ -18,6 +18,8 @@ public:
     static std::vector<std::string> splitWords(const std::string& str);
     static std::vector<std::string> splitByCRLF(const std::string& str);
     static std::vector<std::string> splitBySemicolon(const std::string& s);
+
+    static bool         dirExists(std::string&, std::string);
     
     static Method      stringToMethod(const std::string& method_str);
     static std::string toLowerCase(const std::string& str);
