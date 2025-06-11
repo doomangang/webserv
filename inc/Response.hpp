@@ -3,9 +3,11 @@
 
 #include "Webserv.hpp"
 #include "Request.hpp"
-#include "Server.hpp"
 #include "CgiHandler.hpp"
 #include "HttpUtils.hpp"
+
+// Forward declaration to avoid circular includes
+class Server;
 
 class Response {
 public:

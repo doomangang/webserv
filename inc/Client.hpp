@@ -2,12 +2,13 @@
 #define CLIENT_HPP
 
 #include "Webserv.hpp"
-#include "Server.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "RequestParser.hpp"
 #include "ResponseWriter.hpp"
-#include "CgiHandler.hpp"
+
+// Forward declarations to avoid circular includes
+class Server;
 
 class Client {
 private:

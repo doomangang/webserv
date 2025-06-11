@@ -253,7 +253,7 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
         HttpUtils::trim(stmt);
         if (stmt.empty()) continue;
 
-        if (stmt.find("listen ") == 0) {
+        if (HttpUtils::dirExists(stmt, "listen")) {
             // "listen host:port" or "listen port"
             std::string args = stmt.substr(7);
             HttpUtils::trim(args);
@@ -267,29 +267,29 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
                 srv.setPort(static_cast<unsigned short>(std::atoi(args.c_str())));
             }
         }
-        else if (stmt.find("server_name ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "server_name")) {
             // e.g. "server_name a.com b.com"
             std::vector<std::string> names = HttpUtils::splitWords(stmt.substr(12));
             srv.setServerNames(names);
         }
-        else if (stmt.find("root ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "root")) {
             // e.g. "root /var/www"
             std::string path = stmt.substr(5);
             HttpUtils::trim(path);
             srv.setRootPath(path);
         }
-        else if (stmt.find("index ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "index")) {
             // e.g. "index index.html index.htm"
             std::vector<std::string> files = HttpUtils::splitWords(stmt.substr(6));
             srv.setIndexFiles(files);
         }
-        else if (stmt.find("client_max_body_size ") == 0) {
+        else if (HttpUtils::dirExists(stmt,"client_max_body_size")) {
             // e.g. "client_max_body_size 1000000"
-            std::string num = stmt.substr(22);
+            std::string num = stmt.substr(21);
             HttpUtils::trim(num);
             srv.setLimitClientBodySize(static_cast<size_t>(std::atoi(num.c_str())));
         }
-        else if (stmt.find("error_page ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "error_page")) {
             // e.g. "error_page 404 /404.html"
             std::vector<std::string> parts = HttpUtils::splitWords(stmt.substr(11));
             if (parts.size() >= 2) {
@@ -298,17 +298,22 @@ Server ConfigParser::parseServerBlock(std::string serverText) {
                 srv.addErrorPage(code, path);
             }
         }
-        else if (stmt.find("autoindex ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "autoindex")) {
             // e.g. "autoindex on"/"autoindex off"
             std::string onoff = stmt.substr(10);
             HttpUtils::trim(onoff);
-            srv.setAutoindex(onoff == "on");
+            srv.setAutoindex(HttpUtils::toLowerCase(onoff) == "on");
         }
-        else if (stmt.find("upload_store ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "upload_store")) {
             // e.g. "upload_store /tmp/uploads"
             std::string up = stmt.substr(13);
             HttpUtils::trim(up);
             srv.setUploadStore(up);
+        }
+        else if (HttpUtils::dirExists(stmt, "filepath")) {
+            std::string filepath = stmt.substr(9);
+            HttpUtils::trim(filepath);
+            srv.setUploadStore(filepath);
         }
         // unknown server-level directives are ignored
     }
@@ -353,28 +358,36 @@ Location ConfigParser::parseLocationBlock(const std::string& locText) {
         HttpUtils::trim(stmt);
         if (stmt.empty()) continue;
 
-        if (stmt.find("methods ") == 0) {
+        if (HttpUtils::dirExists(stmt, "allow_methods")) {
             parseMethodsDirective(loc, stmt);
         }
-        else if (stmt.find("return ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "return")) {
             parseReturnDirective(loc, stmt);
         }
-        else if (stmt.find("root ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "root")) {
             parseRootDirective(loc, stmt);
         }
-        else if (stmt.find("index ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "index")) {
             parseIndexDirective(loc, stmt);
         }
-        else if (stmt.find("autoindex ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "autoindex")) {
             parseAutoindexDirective(loc, stmt);
         }
-        else if (stmt.find("cgi ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "cgi_path")) {
             parseCgiDirective(loc, stmt);
         }
-        else if (stmt.find("upload_store ") == 0) {
+        else if (HttpUtils::dirExists(stmt, "cgi_ext")) {
+            parseCgiExtension(loc, stmt);
+        }
+        else if (HttpUtils::dirExists(stmt, "upload_store")) {
             parseUploadStoreDirective(loc, stmt);
         }
-        // 그 외 지시자는 무시
+        else if (HttpUtils::dirExists(stmt,"client_body_size")) {
+            std::string num = stmt.substr(17);
+            HttpUtils::trim(num);
+            loc.setClientBodySize(static_cast<size_t>(std::atoi(num.c_str())));
+        }
+        // 그 외 지시자는 무시 (Path, alias,cgipath cgi ext)
     }
 
     // 5) Default methods 설정 (GET, POST, DELETE)
@@ -422,7 +435,7 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
     // "methods GET POST DELETE"
     loc.clearAllowMethods();
 
-    std::vector<std::string> words = HttpUtils::splitWords(stmt.substr(8));
+    std::vector<std::string> words = HttpUtils::splitWords(stmt.substr(14));
     std::set<Method> methods;
     
     for (size_t i = 0; i < words.size(); ++i) {
@@ -430,6 +443,8 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
         if (w == "GET") methods.insert(GET);
         else if (w == "POST") methods.insert(POST);
         else if (w == "DELETE") methods.insert(DELETE);
+        else if (w == "PUT") methods.insert(PUT);
+        else if (w == "HEAD") methods.insert(HEAD);
         else if (w == "EMPTY") methods.insert(EMPTY);
         else methods.insert(UNKNOWN_METHOD);
     }
@@ -468,14 +483,20 @@ void ConfigParser::parseAutoindexDirective(Location& loc, const std::string& stm
     // "autoindex on" or "autoindex off"
     std::string onoff = stmt.substr(10);
     HttpUtils::trim(onoff);
-    loc.setAutoindex(onoff == "on");
+    loc.setAutoindex(HttpUtils::toLowerCase(onoff) == "on");
+}
+
+void ConfigParser::parseCgiExtension(Location& loc, const std::string& stmt) {
+    // "cgi .php .py"
+    std::vector<std::string> exts = HttpUtils::splitWords(stmt.substr(8));
+    std::set<std::string> s(exts.begin(), exts.end());
+    loc.setCgiExtensions(s);
 }
 
 void ConfigParser::parseCgiDirective(Location& loc, const std::string& stmt) {
-    // "cgi .php .py"
-    std::vector<std::string> exts = HttpUtils::splitWords(stmt.substr(4));
+    std::vector<std::string> exts = HttpUtils::splitWords(stmt.substr(9));
     std::set<std::string> s(exts.begin(), exts.end());
-    loc.setCgiExtensions(s);
+    loc.setCgiPath(s);
 }
 
 void ConfigParser::parseUploadStoreDirective(Location& loc, const std::string& stmt) {
@@ -513,17 +534,69 @@ void ConfigParser::validateServerBlock(const Server& srv) {
         throw MissingDirectiveException("listen");
     }
     validatePort(srv.getPort());
-    
-    if (srv.getRootPath().empty()) {
-        throw MissingDirectiveException("root");
-    }
-    validatePath(srv.getRootPath());
+
+    validateRootConfiguration(srv);
     
     // 각 location 검증
     const std::vector<Location>& locations = srv.getLocations();
     for (size_t i = 0; i < locations.size(); ++i) {
         if (!locations[i].getRootPath().empty()) {
             validatePath(locations[i].getRootPath());
+        }
+    }
+
+    if (!srv.getRootPath().empty()) {
+        validatePath(srv.getRootPath());
+    }
+}
+
+void ConfigParser::validateRootConfiguration(const Server& srv) {
+    bool server_has_root = !srv.getRootPath().empty();
+    const std::vector<Location>& locations = srv.getLocations();
+    
+    // Case 1: Location이 없는 경우 - 서버 레벨에 root 필수
+    if (locations.empty()) {
+        if (!server_has_root) {
+            throw MissingDirectiveException("root (required at server level when no locations defined)");
+        }
+        return;
+    }
+    
+    // Case 2: Location들이 있는 경우 - 각각이 root를 해결할 수 있는지 확인
+    std::vector<std::string> problematic_locations;
+    
+    for (size_t i = 0; i < locations.size(); ++i) {
+        const Location& loc = locations[i];
+        bool location_has_root = !loc.getRootPath().empty();
+        
+        // 이 location이 root 경로를 결정할 수 있는가?
+        if (!location_has_root && !server_has_root) {
+            problematic_locations.push_back(loc.getUri());
+        }
+    }
+    
+    // 문제가 있는 location들 리포트
+    if (!problematic_locations.empty()) {
+        std::string error_msg = "missing root directive for location(s): ";
+        for (size_t i = 0; i < problematic_locations.size(); ++i) {
+            if (i > 0) error_msg += ", ";
+            error_msg += "'" + problematic_locations[i] + "'";
+        }
+        error_msg += " (provide server-level root or location-specific root)";
+        
+        throw MissingDirectiveException(error_msg);
+    }
+    
+    std::cout << GREEN << "Root configuration validated successfully:" << RESET << std::endl;
+    if (server_has_root) {
+        std::cout << "  Server root: " << srv.getRootPath() << std::endl;
+    }
+    for (size_t i = 0; i < locations.size(); ++i) {
+        const Location& loc = locations[i];
+        if (!loc.getRootPath().empty()) {
+            std::cout << "  Location " << loc.getUri() << " root: " << loc.getRootPath() << std::endl;
+        } else {
+            std::cout << "  Location " << loc.getUri() << " root: (inherited from server)" << std::endl;
         }
     }
 }

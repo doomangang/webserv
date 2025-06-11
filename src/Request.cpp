@@ -168,7 +168,6 @@ void                                    Request::setErrorCode(int code)         
 void                                    Request::setStatus(ParseState state)                  { _status          = state; }
 void                                    Request::setBody(std::string& body)                   { _body            = body; }
 void                                    Request::setBytesToRead(ssize_t bytes)                { _bytes_to_read   = bytes; }
-void                                    Request::reserveBody(ssize_t size_hint)               { _body.reserve(size_hint); }
 
 // getters
 Method                                  Request::getMethod()             const { return _method; }
@@ -181,6 +180,22 @@ ssize_t                                 Request::getBytesToRead()        const {
 ParseState                              Request::getStatus()             const { return _status; }
 int                                     Request::getErrorCode()          const { return _error_code; }
 
+
+// CGI 관련 메서드 구현
+std::string Request::getQuery() const {
+    return getQueryString();
+}
+
+std::string Request::getMethodStr() const {
+    switch (_method) {
+        case GET: return "GET";
+        case POST: return "POST";
+        case DELETE: return "DELETE";
+        case PUT: return "PUT";
+        case HEAD: return "HEAD";
+        default: return "UNKNOWN";
+    }
+}
 
 Request::Request()
 : _method(GET)

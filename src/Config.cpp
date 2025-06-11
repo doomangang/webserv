@@ -1,4 +1,5 @@
 #include "../inc/Config.hpp"
+#include "../inc/Server.hpp"
 
 Config::Config() 
     : _software_name("webserv"),

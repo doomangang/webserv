@@ -67,32 +67,32 @@
 //     }
 // }
 
-// // void Connection::writeClient() {
-// //     if (_response_buf.empty()) {
-// //         prepareResponse();
-// //     }
+// void Connection::writeClient() {
+//     if (_response_buf.empty()) {
+//         prepareResponse();
+//     }
     
-// //     size_t to_send = _response_buf.size() - _bytes_sent;
-// //     ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
+//     size_t to_send = _response_buf.size() - _bytes_sent;
+//     ssize_t sent = send(_fd, _response_buf.c_str() + _bytes_sent, to_send, 0);
     
-// //     if (sent > 0) {
-// //         _bytes_sent += sent;
-// //         if (_bytes_sent >= _response_buf.size()) {
-// //             // 전송 완료
-// //             std::string conn_header = _response.getHeaderValue("Connection");
-// //             if (conn_header == "close") {
-// //                 _progress = END_CONNECTION;
-// //             } else {
-// //                 // keep-alive: 다음 요청 대기
-// //                 resetConnection();
-// //             }
-// //         }
-// //     } else if (sent < 0) {
-// //         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-// //             _progress = END_CONNECTION;
-// //         }
-// //     }
-// // }
+//     if (sent > 0) {
+//         _bytes_sent += sent;
+//         if (_bytes_sent >= _response_buf.size()) {
+//             // 전송 완료
+//             std::string conn_header = _response.getHeaderValue("Connection");
+//             if (conn_header == "close") {
+//                 _progress = END_CONNECTION;
+//             } else {
+//                 // keep-alive: 다음 요청 대기
+//                 resetConnection();
+//             }
+//         }
+//     } else if (sent < 0) {
+//         if (errno != EAGAIN && errno != EWOULDBLOCK) {
+//             _progress = END_CONNECTION;
+//         }
+//     }
+// }
 
 // bool Connection::needsRead() const {
 //     return _progress == FROM_CLIENT || _progress == READ_CONTINUE;

@@ -3,7 +3,9 @@
 
 #include "Webserv.hpp"
 
+// Forward declarations
 class Request;
+class Location;
 
 class CgiHandler {
 	private:
@@ -41,10 +43,10 @@ class CgiHandler {
 
 		std::string	getAfter(const std::string& path, char delim);
 		std::string	getBefore(const std::string& path, char delim);
-		std::string	getPathInfo(std::string& path, std::vector<std::string> extensions);
+		std::string	getPathInfo(const std::string& path, const std::vector<std::string>& extensions);
 		int	countCookies(const std::string& str);
-		int findStart(const std::string path, const std::string delim);
-		std::string decode(std::string &path);
+		int findStart(const std::string& path, const std::string& delim);
+		std::string decode(const std::string& path);
 };
 
 #endif

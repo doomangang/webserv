@@ -1,4 +1,7 @@
 # include "../inc/ServerManager.hpp"
+# include "../inc/Client.hpp"
+# include "../inc/Server.hpp"
+# include "../inc/Logger.hpp"
 
 ServerManager::ServerManager(){}
 ServerManager::~ServerManager(){}
@@ -114,12 +117,12 @@ void    ServerManager::initializeSets()
         //Now it calles listen() twice on even if two servers have the same host:port
         if (listen(it->getFd(), 512) == -1)
         {
-            //LoggerlogMsg(ERROR, CONSOLE_OUTPUT, "webserv: listen error: %s   Closing....", strerror(errno));
+            Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: listen error: %s   Closing....", strerror(errno));
             exit(EXIT_FAILURE);
         }
         if (fcntl(it->getFd(), F_SETFL, O_NONBLOCK) < 0)
         {
-            //LoggerlogMsg(ERROR, CONSOLE_OUTPUT, "webserv: fcntl error: %s   Closing....", strerror(errno));
+            Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: fcntl error: %s   Closing....", strerror(errno));
             exit(EXIT_FAILURE);
         }
         addToSet(it->getFd(), _recv_fd_pool);
@@ -138,21 +141,23 @@ void    ServerManager::acceptNewConnection(Server &serv)
 {
     struct sockaddr_in client_address;
     long  client_address_size = sizeof(client_address);
-    int client_sock;
+    int client_sock = 0;
+    printf("[DBG] Accepted socket = %d\n", client_sock);
+    char buf[INET_ADDRSTRLEN];
 
     if ( (client_sock = accept(serv.getFd(), (struct sockaddr *)&client_address,
      (socklen_t*)&client_address_size)) == -1)
     {
-        //LoggerlogMsg(ERROR, CONSOLE_OUTPUT, "webserv: accept error %s", strerror(errno));
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: accept error %s", strerror(errno));
         return ;
     }
-    //LoggerlogMsg(INFO, CONSOLE_OUTPUT, "New Connection From %s, Assigned Socket %d",inet_ntop(AF_INET, &client_address, buf, INET_ADDRSTRLEN), client_sock);
+    Logger::logMsg(INFO, CONSOLE_OUTPUT, "New Connection From %s, Assigned Socket %d",inet_ntop(AF_INET, &client_address, buf, INET_ADDRSTRLEN), client_sock);
 
     addToSet(client_sock, _recv_fd_pool);
 
     if (fcntl(client_sock, F_SETFL, O_NONBLOCK) < 0)
     {
-        //LoggerlogMsg(ERROR, CONSOLE_OUTPUT, "webserv: fcntl error %s", strerror(errno));
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "webserv: fcntl error %s", strerror(errno));
         removeFromSet(client_sock, _recv_fd_pool);
         close(client_sock);
         return ;
@@ -259,12 +264,18 @@ void    ServerManager::sendResponse(const int &i, Client &c)
  */
 void    ServerManager::readRequest(const int &i, Client &c)
 {
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "readRequest() called for %s\n", strerror(i));
     c.readAndParse();
 
-    if (c.isParseComplete())
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT,
+        "    parseComplete= %d, hasError=%d", c.isParseComplete()
+        ,c.getRequest().hasError());
+    if (c.isParseComplete() || c.getRequest().hasError())
     {
         if (!c.request.hasError())
             c.findSetConfigs(_servers);
+        else
+            c.prepareErrorResponse(c.request.getErrorCode());
         
         removeFromSet(i, _recv_fd_pool);
         addToSet(i, _write_fd_pool);
@@ -288,7 +299,7 @@ void    ServerManager::handleReqBody(Client &c)
 void    ServerManager::sendCgiBody(Client &c, CgiHandler &cgi)
 {
     int bytes_sent;
-    const std::string &req_body = c.request.getBody();
+    std::string req_body = c.request.getBody();
 
     if (req_body.empty())
         bytes_sent = 0;
@@ -315,6 +326,7 @@ void    ServerManager::sendCgiBody(Client &c, CgiHandler &cgi)
     {
         c.updateTime();
         req_body = req_body.substr(bytes_sent);
+        c.request.setBody(req_body); // Update the request body
     }
 }
 
@@ -374,7 +386,7 @@ void	ServerManager::removeFromSet(const int i, fd_set &set)
     {
         _biggest_fd = 0;
         for(int j=0; j < i; ++j) {
-            if(FD_ISSET(j, _recv_fd_pool) || FD_ISSET(j, _write_fd_pool))
+            if(FD_ISSET(j, &_recv_fd_pool) || FD_ISSET(j, &_write_fd_pool))
                 _biggest_fd = j;
         }
     }

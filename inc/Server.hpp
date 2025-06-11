@@ -5,13 +5,10 @@
 
 #include "Webserv.hpp"
 #include "Location.hpp"
-#include "Server.hpp"
-#include "ServerManager.hpp"
-#include "Config.hpp"
 // #include "HttpUtils.hpp"
 
-// class ServerManager;
-// class Config;
+class ServerManager;
+class Config;
 // class Response;
 // class Request;
 
@@ -22,7 +19,7 @@ private:
     std::vector<std::string>    _server_names;
     std::string                 _host;
     int                         _port;
-    int                         _fd;
+    int                         _fd; //
     int                         _request_uri_limit_size;
     int                         _request_header_limit_size;
     int                         _limit_client_body_size;
@@ -35,6 +32,7 @@ private:
     std::map<int, std::string>  _error_pages;
     Config*                     _config;
     std::vector<Location>       _locations;
+    
 
 public:
     /* Orthodox Canonical Form (OCF) */
@@ -76,6 +74,7 @@ public:
     void setRootPath(const std::string& path);
     std::vector<std::string> getIndexFiles() const;
     void setIndexFiles(const std::vector<std::string>& files);
+    std::string resolveRootPath(const Location&) const;
 
     // Autoindex
     bool getAutoindex() const;

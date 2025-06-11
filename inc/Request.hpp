@@ -38,6 +38,10 @@ public:
 	int								   			getErrorCode()const;
 	std::string 								getQueryParam(const std::string&) const;
 
+	// CGI 관련 메서드들 추가
+	std::string									getQuery() const;
+	std::string									getMethodStr() const;
+
 	/* request line */
 	void										addHeader(const std::string& key, const std::string& value);
 	bool										hasHeader(const std::string& key) const;

@@ -30,6 +30,7 @@ private:
     void                        parseIndexDirective(Location& loc, const std::string& stmt);
     void                        parseAutoindexDirective(Location& loc, const std::string& stmt);
     void                        parseCgiDirective(Location& loc, const std::string& stmt);
+    void                        parseCgiExtension(Location& loc, const std::string& stmt);
     void                        parseUploadStoreDirective(Location& loc, const std::string& stmt);
     void                        parseReturnDirective(Location& loc, const std::string& stmt);
 
@@ -37,6 +38,7 @@ private:
     void validatePath(const std::string& path);
     void validateBodySize(size_t size);
     void validateServerBlock(const Server& srv);
+    void validateRootConfiguration(const Server& srv);
 
 public:
     /* Orthodox Canonical Form (OCF) */
