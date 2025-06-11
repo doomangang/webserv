@@ -2,15 +2,6 @@
 
 #include "../inc/ConfigParser.hpp"
 
-#include <sys/stat.h>
-#include <fstream>
-#include <sstream>
-#include <iterator>
-#include <algorithm>
-#include <set>
-#include <cstdlib> 
-#include <stdexcept> 
-
 ConfigParser::ConfigParser() {}
 
 ConfigParser::ConfigParser(const ConfigParser& other) {
@@ -432,15 +423,18 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
     loc.clearAllowMethods();
 
     std::vector<std::string> words = HttpUtils::splitWords(stmt.substr(8));
-    std::set<std::string> methods(words.begin(), words.end());
+    std::set<Method> methods;
+    
     for (size_t i = 0; i < words.size(); ++i) {
         const std::string& w = words[i];
-        if (w == "GET") loc.addAllowMethod(GET);
-        else if (w == "POST") loc.addAllowMethod(POST);
-        else if (w == "DELETE") loc.addAllowMethod(DELETE);
-        else if (w == "EMPTY") loc.addAllowMethod(EMPTY);
-        else loc.addAllowMethod(UNKNOWN_METHOD);
+        if (w == "GET") methods.insert(GET);
+        else if (w == "POST") methods.insert(POST);
+        else if (w == "DELETE") methods.insert(DELETE);
+        else if (w == "EMPTY") methods.insert(EMPTY);
+        else methods.insert(UNKNOWN_METHOD);
     }
+    
+    loc.setAllowMethods(methods);
 }
 
 void ConfigParser::parseReturnDirective(Location& loc, const std::string& stmt) {

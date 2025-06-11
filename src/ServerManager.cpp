@@ -9,7 +9,7 @@ ServerManager::~ServerManager(){}
 void    ServerManager::setupServers(std::vector<Server> servers)
 {
     _servers = servers;
-    char buf[INET_ADDRSTRLEN];
+    // char buf[INET_ADDRSTRLEN];
     bool    serverDub;
     for (std::vector<Server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
     {
@@ -20,6 +20,7 @@ void    ServerManager::setupServers(std::vector<Server> servers)
             {
                 it->setFd(it2->getFd());
                 serverDub = true;
+                break ;
             }
         }
         if (!serverDub)
@@ -57,8 +58,8 @@ void    ServerManager::runServers()
 
         if ( (select_ret = select(_biggest_fd + 1, &recv_set_cpy, &write_set_cpy, NULL, &timer)) < 0 )
         {
+            perror("webserv: select error");
             exit(1);
-            continue ;
         }
         for (int i = 0; i <= _biggest_fd; ++i)
         {
@@ -85,7 +86,7 @@ void    ServerManager::runServers()
 
 
 /* Checks time passed for clients since last message, If more than CONNECTION_TIMEOUT, close connection */
-oid    ServerManager::checkTimeout()
+void    ServerManager::checkTimeout()
 {
     std::vector<int> fds_to_close;
     for(std::map<int, Client>::iterator it = _clients_map.begin() ; it != _clients_map.end(); ++it)
@@ -158,7 +159,7 @@ void    ServerManager::acceptNewConnection(Server &serv)
     }
 
     Client  new_client(serv.getFd());
-    new_clientsetServer(serv);
+    new_client.setServer(serv);
 
     if (_clients_map.count(client_sock) != 0)
         _clients_map.erase(client_sock);
@@ -287,7 +288,7 @@ void    ServerManager::handleReqBody(Client &c)
 void    ServerManager::sendCgiBody(Client &c, CgiHandler &cgi)
 {
     int bytes_sent;
-    std::string &req_body = c.request.getBody();
+    const std::string &req_body = c.request.getBody();
 
     if (req_body.empty())
         bytes_sent = 0;
@@ -301,7 +302,7 @@ void    ServerManager::sendCgiBody(Client &c, CgiHandler &cgi)
         removeFromSet(cgi.pipe_in[1], _write_fd_pool);
         close(cgi.pipe_in[1]);
         close(cgi.pipe_out[0]);
-        c.response.setErrorResponse(500);
+        c.response.setErrorResponse(500, c.getServer());
         c.response.setCgiState(2); // done (with an error)
         addToSet(c.getFd(), _write_fd_pool); // Add client back to write set to send error page
     }
@@ -334,7 +335,7 @@ void    ServerManager::readCgiResponse(Client &c, CgiHandler &cgi)
 		waitpid(cgi.getCgiPid(), &status, 0);
 		if(WIFEXITED(status) && WEXITSTATUS(status) != 0)
 		{
-			c.response.setErrorResponse(502); // Bad Gateway
+			c.response.setErrorResponse(502, c.getServer()); // Bad Gateway
 		}
         c.response.setCgiState(2); // Mark CGI as complete
         
@@ -348,7 +349,7 @@ void    ServerManager::readCgiResponse(Client &c, CgiHandler &cgi)
         removeFromSet(cgi.pipe_out[0], _recv_fd_pool);
         close(cgi.pipe_out[0]);
         c.response.setCgiState(2);
-        c.response.setErrorResponse(500);
+        c.response.setErrorResponse(500, c.getServer());
         addToSet(c.getFd(), _write_fd_pool);
         return;
     }

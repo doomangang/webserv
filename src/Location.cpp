@@ -100,20 +100,20 @@ void Location::setUri(const std::string& uri) { _uri = uri; }
 
 void Location::setRootPath(const std::string& path) { _root_path = path; }
 
-void Location::setAllowMethods(std::set<Method>& methods) { _allow_methods = methods; }
+void Location::setAllowMethods(const std::set<Method>& methods) { _allow_methods = methods; }
 
 void Location::addAllowMethod(Method m) { _allow_methods.insert(m); }
 
 void Location::clearAllowMethods() { _allow_methods.clear(); }
 
-void Location::setIndexFiles(std::vector<std::string>& files) {
+void Location::setIndexFiles(const std::vector<std::string>& files) {
 	_index_files.clear();
 	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it) {
 		_index_files.insert(*it);
 	}
 }
 
-void Location::setCgiExtensions(std::set<std::string>& exts) { _cgi_extensions = exts; }
+void Location::setCgiExtensions(const std::set<std::string>& exts) { _cgi_extensions = exts; }
 
 void Location::setAutoindex(bool onoff) { _autoindex = onoff; }
 

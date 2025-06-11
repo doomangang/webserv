@@ -2,7 +2,12 @@
 #define CLIENT_HPP
 
 #include "Webserv.hpp"
-#include "HttpUtils.hpp"
+#include "Server.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
+#include "RequestParser.hpp"
+#include "ResponseWriter.hpp"
+#include "CgiHandler.hpp"
 
 class Client {
 private:
@@ -11,6 +16,8 @@ private:
 	time_t     			_last_request_at;
 	std::string 		_ip;
 	int         		_port;
+
+	void				prepareAutoindexPage(const std::string& dir_path);
 	
 public:
 	/* Orthodox Canonical Form (OCF) */
@@ -39,19 +46,30 @@ public:
 	std::string         resolveFilePath(const Location&) const;
 	void                handleStaticFile(const std::string&);
 	void                handleDirectoryListing(const Location&, const std::string& dir_path);
-	
-	
+	void                clearClient();
+	void				updateTime();
 
 	/* getter & setter */
 	int                 getFd() const;
 	time_t              getLastRequestAt() const;
 	std::string         getIp() const;
 	int                 getPort() const;
+	Server              getServer() const;
+	Request&            getRequest();
+	Response&           getResponse();
+	ResponseWriter&    	getWriter();
+	RequestParser&     	getParser();
+
 	
 	void                setLastRequestAt();
 	void                setFd(int fd);
 	void                setIp(const std::string& ip);
 	void                setPort(int port);
+	void				setServer(const Server& server);
+	void				setRequest(const Request& request);
+	void				setResponse(const Response& response);
+	void				setWriter(const ResponseWriter& writer);
+	void				setParser(const RequestParser& parser);
 
 	/* exception classes */
 };
