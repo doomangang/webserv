@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>405 - 허용되지 않는 메소드</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .error-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 60px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            margin: 20px;
+        }
+        .error-code {
+            font-size: 8em;
+            font-weight: bold;
+            color: #6c5ce7;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            animation: rotate 3s infinite;
+        }
+        .error-message {
+            font-size: 2em;
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+        .error-description {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin: 30px 0;
+            line-height: 1.6;
+        }
+        .error-actions {
+            margin-top: 40px;
+        }
+        .btn {
+            display: inline-block;
+            background: #6c5ce7;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            margin: 10px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(108, 92, 231, 0.3);
+        }
+        .btn:hover {
+            background: #5f3dc4;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+        }
+        .btn-secondary {
+            background: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        .error-info {
+            background: #f4f3ff;
+            border: 1px solid #d1c4e9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+            font-size: 0.9em;
+            color: #4a148c;
+        }
+        .method-list {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .method-list code {
+            background: #f1f2f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #2d3436;
+        }
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(90deg); }
+            50% { transform: rotate(180deg); }
+            75% { transform: rotate(270deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .emoji {
+            font-size: 3em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="emoji">🔒</div>
+        <h1 class="error-code">405</h1>
+        <h2 class="error-message">허용되지 않는 메소드</h2>
+        <p class="error-description">
+            요청한 리소스에 대해 사용된 HTTP 메소드가 허용되지 않습니다.<br>
+            다른 메소드를 사용하여 다시 시도해 주세요.
+        </p>
+        
+        <div class="error-info">
+            <strong>HTTP 메소드 오류란?</strong><br>
+            • 서버가 해당 리소스에 대해 요청된 메소드를 지원하지 않음<br>
+            • 예: POST만 허용하는 엔드포인트에 GET 요청<br>
+            • 읽기 전용 리소스에 PUT/DELETE 요청<br>
+            • CGI 스크립트가 특정 메소드만 처리하도록 설정됨
+        </div>
+        
+        <div class="method-list">
+            <strong>일반적으로 허용되는 HTTP 메소드:</strong><br>
+            • <code>GET</code> - 리소스 조회<br>
+            • <code>POST</code> - 데이터 전송/생성<br>
+            • <code>PUT</code> - 리소스 수정<br>
+            • <code>DELETE</code> - 리소스 삭제<br>
+            • <code>HEAD</code> - 헤더 정보만 조회<br>
+            • <code>OPTIONS</code> - 지원 메소드 확인
+        </div>
+        
+        <div class="error-actions">
+            <a href="/" class="btn">🏠 홈으로 돌아가기</a>
+            <a href="/forms.html" class="btn btn-secondary">🔧 메소드 테스트</a>
+        </div>
+        
+        <p style="margin-top: 40px; color: #95a5a6; font-size: 0.9em;">
+            올바른 HTTP 메소드에 대한 정보가 필요하면 API 문서를 확인하세요.
+        </p>
+    </div>
+</body>
+</html>

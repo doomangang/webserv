@@ -1,0 +1,14 @@
+{
+  "message": "JSON 파일 서빙 테스트",
+  "description": "이 JSON이 올바르게 파싱되면 application/json MIME 타입으로 서빙된 것입니다",
+  "server": "webserv",
+  "test_data": {
+    "numbers": [1, 2, 3, 4, 5],
+    "strings": ["안녕하세요", "Hello", "Bonjour"],
+    "boolean": true,
+    "null_value": null
+  },
+  "encoding": "UTF-8",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "status": "success"
+}

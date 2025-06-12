@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - 페이지를 찾을 수 없습니다</title>
+    <title>403 - 접근이 금지되었습니다</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -31,7 +31,7 @@
             color: #e74c3c;
             margin: 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            animation: bounce 2s infinite;
+            animation: shake 1s infinite;
         }
         .error-message {
             font-size: 2em;
@@ -49,7 +49,7 @@
         }
         .btn {
             display: inline-block;
-            background: #3498db;
+            background: #e74c3c;
             color: white;
             padding: 15px 30px;
             border-radius: 25px;
@@ -57,12 +57,12 @@
             margin: 10px;
             font-size: 1.1em;
             transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 3px 10px rgba(231, 76, 60, 0.3);
         }
         .btn:hover {
-            background: #2980b9;
+            background: #c0392b;
             transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
         }
         .btn-secondary {
             background: #95a5a6;
@@ -71,17 +71,18 @@
             background: #7f8c8d;
         }
         .error-info {
-            background: #ecf0f1;
+            background: #fdf2f2;
+            border: 1px solid #f8d7da;
             padding: 20px;
             border-radius: 10px;
             margin: 30px 0;
             font-size: 0.9em;
-            color: #34495e;
+            color: #721c24;
         }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+            20%, 40%, 60%, 80% { transform: translateX(3px); }
         }
         .emoji {
             font-size: 3em;
@@ -91,20 +92,20 @@
 </head>
 <body>
     <div class="error-container">
-        <div class="emoji">🤔</div>
-        <h1 class="error-code">404</h1>
-        <h2 class="error-message">페이지를 찾을 수 없습니다</h2>
+        <div class="emoji">🚫</div>
+        <h1 class="error-code">403</h1>
+        <h2 class="error-message">접근이 금지되었습니다</h2>
         <p class="error-description">
-            요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.<br>
-            URL을 확인하시거나 아래 링크를 이용해 주세요.
+            요청하신 리소스에 대한 접근 권한이 없습니다.<br>
+            서버가 요청을 이해했지만 접근을 거부했습니다.
         </p>
         
         <div class="error-info">
             <strong>가능한 원인:</strong><br>
-            • 잘못된 URL 입력<br>
-            • 페이지가 삭제되거나 이동됨<br>
-            • 링크가 잘못되었음<br>
-            • 서버에서 해당 경로를 찾을 수 없음
+            • 파일 또는 디렉터리 접근 권한 부족<br>
+            • 인증이 필요한 리소스<br>
+            • IP 주소 차단<br>
+            • 서버 설정에 의한 접근 제한
         </div>
         
         <div class="error-actions">
@@ -113,7 +114,7 @@
         </div>
         
         <p style="margin-top: 40px; color: #95a5a6; font-size: 0.9em;">
-            문제가 지속되면 관리자에게 문의해 주세요.
+            정당한 접근이라고 생각되면 관리자에게 문의해 주세요.
         </p>
     </div>
 </body>

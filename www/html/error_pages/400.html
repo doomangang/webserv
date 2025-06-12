@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - 페이지를 찾을 수 없습니다</title>
+    <title>400 - 잘못된 요청</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -28,10 +28,10 @@
         .error-code {
             font-size: 8em;
             font-weight: bold;
-            color: #e74c3c;
+            color: #f39c12;
             margin: 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            animation: bounce 2s infinite;
+            animation: wobble 2s infinite;
         }
         .error-message {
             font-size: 2em;
@@ -49,7 +49,7 @@
         }
         .btn {
             display: inline-block;
-            background: #3498db;
+            background: #f39c12;
             color: white;
             padding: 15px 30px;
             border-radius: 25px;
@@ -57,12 +57,12 @@
             margin: 10px;
             font-size: 1.1em;
             transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 3px 10px rgba(243, 156, 18, 0.3);
         }
         .btn:hover {
-            background: #2980b9;
+            background: #e67e22;
             transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
         }
         .btn-secondary {
             background: #95a5a6;
@@ -71,17 +71,22 @@
             background: #7f8c8d;
         }
         .error-info {
-            background: #ecf0f1;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
             padding: 20px;
             border-radius: 10px;
             margin: 30px 0;
             font-size: 0.9em;
-            color: #34495e;
+            color: #856404;
         }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
+        @keyframes wobble {
+            0% { transform: rotate(0deg); }
+            15% { transform: rotate(-5deg); }
+            30% { transform: rotate(5deg); }
+            45% { transform: rotate(-3deg); }
+            60% { transform: rotate(3deg); }
+            75% { transform: rotate(-1deg); }
+            100% { transform: rotate(0deg); }
         }
         .emoji {
             font-size: 3em;
@@ -91,20 +96,21 @@
 </head>
 <body>
     <div class="error-container">
-        <div class="emoji">🤔</div>
-        <h1 class="error-code">404</h1>
-        <h2 class="error-message">페이지를 찾을 수 없습니다</h2>
+        <div class="emoji">⚠️</div>
+        <h1 class="error-code">400</h1>
+        <h2 class="error-message">잘못된 요청</h2>
         <p class="error-description">
-            요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.<br>
-            URL을 확인하시거나 아래 링크를 이용해 주세요.
+            요청이 올바르지 않거나 서버가 이해할 수 없는 형식입니다.<br>
+            요청 내용을 확인하고 다시 시도해 주세요.
         </p>
         
         <div class="error-info">
             <strong>가능한 원인:</strong><br>
-            • 잘못된 URL 입력<br>
-            • 페이지가 삭제되거나 이동됨<br>
-            • 링크가 잘못되었음<br>
-            • 서버에서 해당 경로를 찾을 수 없음
+            • 잘못된 HTTP 요청 형식<br>
+            • 필수 헤더 누락<br>
+            • 잘못된 파라미터 값<br>
+            • 지원하지 않는 문자 인코딩<br>
+            • 요청 크기 초과
         </div>
         
         <div class="error-actions">
@@ -113,7 +119,7 @@
         </div>
         
         <p style="margin-top: 40px; color: #95a5a6; font-size: 0.9em;">
-            문제가 지속되면 관리자에게 문의해 주세요.
+            지속적인 문제 발생 시 관리자에게 문의해 주세요.
         </p>
     </div>
 </body>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CGI 스크립트 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #00cec9, #55a3ff);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { color: #2d3436; text-align: center; margin-bottom: 30px; }
+        .cgi-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #00cec9;
+        }
+        .script-item {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .script-item:hover {
+            transform: translateY(-2px);
+        }
+        .script-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2d3436;
+            margin-bottom: 10px;
+        }
+        .script-description {
+            color: #636e72;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .script-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: #00cec9;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #00a085;
+            transform: translateY(-2px);
+        }
+        .btn-python { background: #3776ab; }
+        .btn-python:hover { background: #2d5aa0; }
+        .btn-shell { background: #4caf50; }
+        .btn-shell:hover { background: #45a049; }
+        .navigation {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .navigation a {
+            background: #636e72;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background 0.3s ease;
+        }
+        .navigation a:hover { background: #2d3436; }
+        .info-box {
+            background: #e8f4f8;
+            border: 1px solid #bee5eb;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        code {
+            background: #f1f2f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐍 CGI 스크립트 테스트 센터</h1>
+        <p style="text-align: center; color: #636e72; font-size: 1.1em;">
+            웹서버의 CGI (Common Gateway Interface) 기능을 테스트할 수 있는 다양한 스크립트들입니다.
+        </p>
+        
+        <div class="info-box">
+            <h3>ℹ️ CGI 테스트 정보</h3>
+            <p><strong>CGI 디렉토리:</strong> <code>/cgi-bin/</code></p>
+            <p><strong>지원 언어:</strong> Python, Shell Script</p>
+            <p><strong>실행 권한:</strong> 모든 스크립트에 실행 권한이 부여되었습니다</p>
+        </div>
+        
+        <div class="cgi-section">
+            <h2>🔧 사용 가능한 CGI 스크립트</h2>
+            
+            <div class="script-item">
+                <div class="script-title">🐍 Hello World (Python)</div>
+                <div class="script-description">
+                    기본적인 Python CGI 스크립트입니다. 환경 변수와 쿼리 파라미터를 표시합니다.
+                </div>
+                <div class="script-links">
+                    <a href="hello.py" class="btn btn-python">기본 실행</a>
+                    <a href="hello.py?name=테스터&age=25" class="btn btn-python">파라미터 포함</a>
+                </div>
+            </div>
+            
+            <div class="script-item">
+                <div class="script-title">📝 Form Handler (Python)</div>
+                <div class="script-description">
+                    GET/POST 요청을 처리하는 스크립트입니다. 폼 데이터를 받아서 처리 결과를 보여줍니다.
+                </div>
+                <div class="script-links">
+                    <a href="form_handler.py" class="btn btn-python">GET 테스트</a>
+                    <a href="form_handler.py?test=data&message=hello" class="btn btn-python">GET with 파라미터</a>
+                    <a href="/forms.html" class="btn">폼 테스트 페이지</a>
+                </div>
+            </div>
+            
+            <div class="script-item">
+                <div class="script-title">🔧 Environment Variables (Shell)</div>
+                <div class="script-description">
+                    Shell 스크립트로 모든 환경 변수를 표시합니다. CGI 환경에서의 시스템 정보를 확인할 수 있습니다.
+                </div>
+                <div class="script-links">
+                    <a href="env.sh" class="btn btn-shell">환경변수 보기</a>
+                </div>
+            </div>
+            
+            <div class="script-item">
+                <div class="script-title">📁 Upload Handler (Python)</div>
+                <div class="script-description">
+                    파일 업로드를 처리하는 스크립트입니다. multipart/form-data 형식의 파일 업로드를 테스트할 수 있습니다.
+                </div>
+                <div class="script-links">
+                    <a href="upload_handler.py" class="btn btn-python">GET 요청</a>
+                    <a href="/upload.html" class="btn">파일 업로드 페이지</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cgi-section">
+            <h2>🧪 테스트 시나리오</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="script-item">
+                    <div class="script-title">📊 기본 CGI 테스트</div>
+                    <div class="script-description">환경 변수와 기본 CGI 기능 확인</div>
+                    <a href="hello.py" class="btn">시작하기</a>
+                </div>
+                
+                <div class="script-item">
+                    <div class="script-title">📝 폼 데이터 처리</div>
+                    <div class="script-description">GET/POST 요청과 폼 데이터 처리 테스트</div>
+                    <a href="/forms.html" class="btn">시작하기</a>
+                </div>
+                
+                <div class="script-item">
+                    <div class="script-title">📁 파일 업로드</div>
+                    <div class="script-description">multipart 파일 업로드 기능 테스트</div>
+                    <a href="/upload.html" class="btn">시작하기</a>
+                </div>
+                
+                <div class="script-item">
+                    <div class="script-title">🔧 시스템 정보</div>
+                    <div class="script-description">서버 환경과 시스템 정보 확인</div>
+                    <a href="env.sh" class="btn">시작하기</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <a href="/">← 메인 페이지로 돌아가기</a>
+        </div>
+    </div>
+</body>
+</html>

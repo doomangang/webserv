@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파일 업로드 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { color: #2d3436; text-align: center; margin-bottom: 30px; }
+        .upload-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #6c5ce7;
+        }
+        .upload-area {
+            border: 3px dashed #6c5ce7;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #5f3dc4;
+            background: #f8f9ff;
+        }
+        .upload-area.dragover {
+            border-color: #5f3dc4;
+            background: #e8f4fd;
+            transform: scale(1.02);
+        }
+        input[type="file"] { display: none; }
+        .file-input-label {
+            background: #6c5ce7;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .file-input-label:hover {
+            background: #5f3dc4;
+            transform: translateY(-2px);
+        }
+        .file-list {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f1f2f6;
+            border-radius: 5px;
+        }
+        .file-info { flex: 1; }
+        .file-size { color: #636e72; font-size: 0.9em; }
+        .remove-btn {
+            background: #e17055;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .upload-btn {
+            background: #00b894;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+        .upload-btn:hover {
+            background: #00a085;
+            transform: translateY(-2px);
+        }
+        .upload-btn:disabled {
+            background: #ddd;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f1f2f6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .navigation {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .navigation a {
+            background: #636e72;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background 0.3s ease;
+        }
+        .navigation a:hover { background: #2d3436; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 파일 업로드 테스트</h1>
+        <p>웹서버의 파일 업로드 기능을 테스트합니다.</p>
+        
+        <div class="upload-section">
+            <h2>📤 파일 선택</h2>
+            <div class="upload-area" id="uploadArea">
+                <p>📋 파일을 여기에 드래그하거나 클릭하여 선택하세요</p>
+                <label for="fileInput" class="file-input-label">파일 선택</label>
+                <input type="file" id="fileInput" multiple>
+                <p style="margin-top: 15px; color: #636e72; font-size: 0.9em;">
+                    지원 형식: 이미지, 텍스트, 문서 파일 등<br>
+                    최대 크기: 10MB per file
+                </p>
+            </div>
+            
+            <div class="file-list" id="fileList" style="display: none;">
+                <h3>선택된 파일들:</h3>
+                <div id="selectedFiles"></div>
+            </div>
+            
+            <button class="upload-btn" id="uploadBtn" disabled onclick="uploadFiles()">
+                업로드 시작
+            </button>
+            
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">업로드 진행중...</p>
+            </div>
+            
+            <div class="result" id="uploadResult"></div>
+        </div>
+        
+        <div class="upload-section">
+            <h2>ℹ️ 업로드 테스트 정보</h2>
+            <ul>
+                <li><strong>업로드 경로:</strong> <code>/cgi-bin/upload_handler.py</code></li>
+                <li><strong>메소드:</strong> <code>POST</code></li>
+                <li><strong>인코딩:</strong> <code>multipart/form-data</code></li>
+                <li><strong>최대 파일 크기:</strong> 10MB</li>
+                <li><strong>동시 업로드:</strong> 지원 (여러 파일 선택 가능)</li>
+            </ul>
+        </div>
+        
+        <div class="navigation">
+            <a href="/">← 메인 페이지로 돌아가기</a>
+        </div>
+    </div>
+    
+    <script>
+        let selectedFiles = [];
+        
+        // DOM 요소들
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const uploadResult = document.getElementById('uploadResult');
+        
+        // 드래그 앤 드롭 이벤트
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            selectedFiles = Array.from(files);
+            displaySelectedFiles();
+            uploadBtn.disabled = selectedFiles.length === 0;
+        }
+        
+        function displaySelectedFiles() {
+            if (selectedFiles.length === 0) {
+                fileList.style.display = 'none';
+                return;
+            }
+            
+            fileList.style.display = 'block';
+            selectedFilesDiv.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div><strong>${file.name}</strong></div>
+                        <div class="file-size">${formatFileSize(file.size)} | ${file.type || 'Unknown type'}</div>
+                    </div>
+                    <button class="remove-btn" onclick="removeFile(${index})">제거</button>
+                `;
+                selectedFilesDiv.appendChild(fileItem);
+            });
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displaySelectedFiles();
+            uploadBtn.disabled = selectedFiles.length === 0;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) return;
+            
+            uploadBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            uploadResult.style.display = 'none';
+            
+            const formData = new FormData();
+            selectedFiles.forEach((file, index) => {
+                formData.append(`file_${index}`, file);
+            });
+            
+            try {
+                const response = await fetch('/cgi-bin/upload_handler.py', {
+                    method: 'POST',
+                    body: formData,
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        updateProgress(percentCompleted);
+                    }
+                });
+                
+                updateProgress(100);
+                
+                if (response.ok) {
+                    const result = await response.text();
+                    showResult('업로드 성공! 서버 응답을 확인하세요.', 'success');
+                    selectedFiles = [];
+                    displaySelectedFiles();
+                } else {
+                    showResult(`업로드 실패: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`업로드 오류: ${error.message}`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 2000);
+            }
+        }
+        
+        function updateProgress(percent) {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = `업로드 진행중: ${percent}%`;
+        }
+        
+        function showResult(message, type) {
+            uploadResult.className = `result ${type}`;
+            uploadResult.innerHTML = message;
+            uploadResult.style.display = 'block';
+            
+            setTimeout(() => {
+                uploadResult.style.display = 'none';
+            }, 10000);
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('파일 업로드 테스트 페이지 로드 완료');
+        });
+    </script>
+</body>
+</html>

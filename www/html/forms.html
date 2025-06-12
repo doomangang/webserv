@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP 메소드 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #74b9ff, #a29bfe);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { color: #2d3436; text-align: center; margin-bottom: 30px; }
+        h2 { color: #636e72; border-bottom: 2px solid #74b9ff; padding-bottom: 10px; }
+        .method-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #74b9ff;
+        }
+        form {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #2d3436;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus {
+            border-color: #74b9ff;
+            outline: none;
+        }
+        button {
+            background: #74b9ff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #0984e3;
+            transform: translateY(-2px);
+        }
+        .delete-btn { background: #e17055; }
+        .delete-btn:hover { background: #d63031; }
+        .put-btn { background: #00b894; }
+        .put-btn:hover { background: #00a085; }
+        .ajax-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        .navigation {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .navigation a {
+            background: #636e72;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background 0.3s ease;
+        }
+        .navigation a:hover { background: #2d3436; }
+        code {
+            background: #f1f2f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 HTTP 메소드 테스트</h1>
+        <p>웹서버의 다양한 HTTP 메소드 지원을 테스트합니다.</p>
+        
+        <div class="method-section">
+            <h2>📤 GET 메소드 테스트</h2>
+            <p>URL 파라미터를 통해 데이터를 전송합니다.</p>
+            <form method="GET" action="/cgi-bin/form_handler.py">
+                <label for="get-name">이름:</label>
+                <input type="text" id="get-name" name="name" placeholder="홍길동">
+                
+                <label for="get-age">나이:</label>
+                <input type="number" id="get-age" name="age" placeholder="25">
+                
+                <label for="get-city">도시:</label>
+                <select id="get-city" name="city">
+                    <option value="">선택하세요</option>
+                    <option value="서울">서울</option>
+                    <option value="부산">부산</option>
+                    <option value="대구">대구</option>
+                    <option value="인천">인천</option>
+                </select>
+                
+                <button type="submit">GET 요청 보내기</button>
+            </form>
+        </div>
+        
+        <div class="method-section">
+            <h2>📥 POST 메소드 테스트</h2>
+            <p>요청 본문에 데이터를 포함하여 전송합니다.</p>
+            <form method="POST" action="/cgi-bin/form_handler.py">
+                <label for="post-name">이름:</label>
+                <input type="text" id="post-name" name="name" placeholder="김철수">
+                
+                <label for="post-email">이메일:</label>
+                <input type="email" id="post-email" name="email" placeholder="example@domain.com">
+                
+                <label for="post-message">메시지:</label>
+                <textarea id="post-message" name="message" rows="4" placeholder="여기에 메시지를 입력하세요..."></textarea>
+                
+                <label for="post-category">카테고리:</label>
+                <select id="post-category" name="category">
+                    <option value="문의">문의</option>
+                    <option value="건의">건의</option>
+                    <option value="버그리포트">버그리포트</option>
+                </select>
+                
+                <button type="submit">POST 요청 보내기</button>
+            </form>
+        </div>
+        
+        <div class="method-section">
+            <h2>🔄 AJAX 메소드 테스트</h2>
+            <p>JavaScript를 사용한 비동기 HTTP 요청 테스트 (PUT, DELETE 등)</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>PUT 요청</h3>
+                    <input type="text" id="put-data" placeholder="업데이트할 데이터">
+                    <button class="put-btn" onclick="sendPutRequest()">PUT 요청</button>
+                </div>
+                
+                <div>
+                    <h3>DELETE 요청</h3>
+                    <input type="text" id="delete-id" placeholder="삭제할 ID">
+                    <button class="delete-btn" onclick="sendDeleteRequest()">DELETE 요청</button>
+                </div>
+            </div>
+            
+            <div id="ajax-result" class="ajax-result"></div>
+        </div>
+        
+        <div class="method-section">
+            <h2>📊 메소드 지원 현황</h2>
+            <p>웹서버가 지원하는 HTTP 메소드들:</p>
+            <ul>
+                <li>✅ <code>GET</code> - 리소스 요청</li>
+                <li>✅ <code>POST</code> - 데이터 전송</li>
+                <li>❓ <code>PUT</code> - 리소스 업데이트 (테스트 필요)</li>
+                <li>❓ <code>DELETE</code> - 리소스 삭제 (테스트 필요)</li>
+                <li>❓ <code>HEAD</code> - 헤더만 요청 (테스트 필요)</li>
+                <li>❓ <code>OPTIONS</code> - 지원 메소드 확인 (테스트 필요)</li>
+            </ul>
+            <button onclick="testAllMethods()">모든 메소드 테스트</button>
+            <div id="method-test-result" class="ajax-result"></div>
+        </div>
+        
+        <div class="navigation">
+            <a href="/">← 메인 페이지로 돌아가기</a>
+        </div>
+    </div>
+    
+    <script>
+        async function sendPutRequest() {
+            const data = document.getElementById('put-data').value;
+            const resultDiv = document.getElementById('ajax-result');
+            
+            try {
+                const response = await fetch('/cgi-bin/form_handler.py', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: data, timestamp: new Date().toISOString() })
+                });
+                
+                showResult(resultDiv, `PUT 요청 성공! 상태코드: ${response.status}`, 'success');
+            } catch (error) {
+                showResult(resultDiv, `PUT 요청 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        async function sendDeleteRequest() {
+            const id = document.getElementById('delete-id').value;
+            const resultDiv = document.getElementById('ajax-result');
+            
+            try {
+                const response = await fetch(`/cgi-bin/form_handler.py?id=${id}`, {
+                    method: 'DELETE'
+                });
+                
+                showResult(resultDiv, `DELETE 요청 성공! 상태코드: ${response.status}`, 'success');
+            } catch (error) {
+                showResult(resultDiv, `DELETE 요청 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAllMethods() {
+            const resultDiv = document.getElementById('method-test-result');
+            const methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'];
+            let results = [];
+            
+            showResult(resultDiv, '메소드 테스트 진행 중...', 'info');
+            
+            for (const method of methods) {
+                try {
+                    const response = await fetch('/cgi-bin/form_handler.py', {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    results.push(`${method}: ✅ (${response.status})`);
+                } catch (error) {
+                    results.push(`${method}: ❌ (${error.message})`);
+                }
+            }
+            
+            showResult(resultDiv, results.join('<br>'), 'info');
+        }
+        
+        function showResult(element, message, type) {
+            element.className = `ajax-result ${type}`;
+            element.innerHTML = message;
+            element.style.display = 'block';
+            
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 10000);
+        }
+        
+        // 페이지 로드 시 기본 정보 표시
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('HTTP 메소드 테스트 페이지 로드 완료');
+        });
+    </script>
+</body>
+</html>
