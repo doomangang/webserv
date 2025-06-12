@@ -1,0 +1,33 @@
+# Build files
+*.o
+*.d
+webserv
+simple_debug
+
+# IDE/Editor files
+.vscode/
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# Test files
+*_test.sh
+*_test.log
+test_*
+debug_*
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CGI output files
+www/html/post_data_*.txt
+www/uploads/*
+!www/uploads/.gitkeep
