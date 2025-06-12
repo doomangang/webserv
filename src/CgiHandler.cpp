@@ -1,6 +1,10 @@
 #include "../inc/CgiHandler.hpp"
 #include "../inc/Request.hpp"
 #include "../inc/Location.hpp"
+#include <errno.h>
+#include <cstring>
+#include <unistd.h>
+#include <sys/wait.h>
 
 // Forward declarations for utility functions
 char fromHexToDec(const std::string& hex);
@@ -157,8 +161,28 @@ void CgiHandler::initEnv(Request& req, const std::vector<Location>::iterator it_
 	std::string ext_path;
 
 	extension = this->_cgi_path.substr(this->_cgi_path.find("."));
-	// 임시로 기본 CGI 경로 사용 (_ext_path 멤버가 없으므로)
-	ext_path = "/usr/bin/php"; // 또는 적절한 기본값
+	
+	// 확장자만 추출하도록 수정
+	size_t dot_pos = this->_cgi_path.rfind('.');
+	if (dot_pos != std::string::npos) {
+		extension = this->_cgi_path.substr(dot_pos);
+	} else {
+		extension = "";
+	}
+	
+	std::cout << "[DEBUG] initEnv() - CGI path: " << this->_cgi_path << std::endl;
+	std::cout << "[DEBUG] initEnv() - Extension: " << extension << std::endl;
+	
+	// Location에서 CGI 경로 가져오기
+	if (extension == ".py") {
+		ext_path = "/opt/homebrew/bin/python3";
+	} else if (extension == ".sh") {
+		ext_path = "/bin/bash";
+	} else {
+		ext_path = "/usr/bin/php"; // 기본값
+	}
+	
+	std::cout << "[DEBUG] initEnv() - Interpreter path: " << ext_path << std::endl;
 
 	this->_env["AUTH_TYPE"] = "Basic";
 	this->_env["CONTENT_LENGTH"] = req.getHeaderValue("content-length");
@@ -193,43 +217,85 @@ void CgiHandler::initEnv(Request& req, const std::vector<Location>::iterator it_
 	this->_argv[0] = strdup(ext_path.c_str());
 	this->_argv[1] = strdup(this->_cgi_path.c_str());
 	this->_argv[2] = NULL;
+	
+	// Debug output
+	std::cout << "[DEBUG] initEnv() - Final argv[0]: " << this->_argv[0] << std::endl;
+	std::cout << "[DEBUG] initEnv() - Final argv[1]: " << this->_argv[1] << std::endl;
+	std::cout << "[DEBUG] initEnv() - Environment size: " << this->_env.size() << std::endl;
 }
 
 /* Pipe and execute CGI */
 void CgiHandler::execute(short &error_code)
 {
+	std::cout << "[DEBUG] CGI execute() called with path: " << this->_cgi_path << std::endl;
+	
 	if (this->_argv[0] == NULL || this->_argv[1] == NULL)
 	{
+		std::cout << "[DEBUG] CGI execute failed: argv is NULL" << std::endl;
 		error_code = 500;
 		return ;
 	}
+	
+	std::cout << "[DEBUG] CGI argv[0]: " << this->_argv[0] << std::endl;
+	std::cout << "[DEBUG] CGI argv[1]: " << this->_argv[1] << std::endl;
+	
 	if (pipe(pipe_in) < 0)
 	{
         Logger::logMsg(ERROR, CONSOLE_OUTPUT, "pipe failed");
-
+		std::cout << "[DEBUG] CGI pipe_in failed" << std::endl;
 		error_code = 500;
 		return ;
 	}
 	if (pipe(pipe_out) < 0)
 	{
         Logger::logMsg(ERROR, CONSOLE_OUTPUT, "pipe failed");
-
+		std::cout << "[DEBUG] CGI pipe_out failed" << std::endl;
 		close(pipe_in[0]);
 		close(pipe_in[1]);
 		error_code = 500;
 		return ;
 	}
+	
+	std::cout << "[DEBUG] CGI pipes created successfully" << std::endl;
+	
 	this->_cgi_pid = fork();
+	
 	if (this->_cgi_pid == 0)
 	{
+		// Child process
+		std::cerr << "[DEBUG] Child process started, PID: " << getpid() << std::endl;
+		std::cerr << "[DEBUG] Child argv[0]: " << this->_argv[0] << std::endl;
+		std::cerr << "[DEBUG] Child argv[1]: " << this->_argv[1] << std::endl;
+		
+		// Print environment variables for debugging
+		std::cerr << "[DEBUG] Child environment variables:" << std::endl;
+		for (int i = 0; this->_ch_env[i] != NULL; i++) {
+			std::cerr << "[DEBUG] env[" << i << "]: " << this->_ch_env[i] << std::endl;
+		}
+		
+		// Set up pipes for stdin and stdout, but keep stderr for error messages
 		dup2(pipe_in[0], STDIN_FILENO);
 		dup2(pipe_out[1], STDOUT_FILENO);
 		close(pipe_in[0]);
 		close(pipe_in[1]);
 		close(pipe_out[0]);
 		close(pipe_out[1]);
+		
+		std::cerr << "[DEBUG] Child about to execve: " << this->_argv[0] << std::endl;
 		this->_exit_status = execve(this->_argv[0], this->_argv, this->_ch_env);
-		exit(this->_exit_status);
+		// execve only returns if it fails
+		std::cerr << "[DEBUG] Child execve failed: " << strerror(errno) << std::endl;
+		std::cerr << "[DEBUG] Child execve errno: " << errno << std::endl;
+		exit(127);
+	}
+	else if (this->_cgi_pid > 0) {
+		std::cout << "[DEBUG] CGI parent process, child PID: " << this->_cgi_pid << std::endl;
+		
+		// Close unused pipe ends in parent
+		close(pipe_in[0]);  // Parent doesn't read from stdin pipe
+		close(pipe_out[1]); // Parent doesn't write to stdout pipe
+		
+		std::cout << "[DEBUG] CGI process started successfully" << std::endl;
 	}
 	else if (this->_cgi_pid > 0){}
 	else

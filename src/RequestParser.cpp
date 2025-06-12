@@ -176,7 +176,7 @@ void RequestParser::parseHeaders(Request& request) {
     }
 
     // Content-Length 헤더가 있으면 본문 크기 설정
-    std::string content_length = request.getHeaderValue("Content-Length");
+    std::string content_length = request.getHeaderValue("content-length");
     if (!content_length.empty()) {
         try {
             _expected_body_size = std::atoi(content_length.c_str());
@@ -312,9 +312,15 @@ void RequestParser::parseBody(Request& request) {
         return;
     }
 
-    _received_body_size += _raw_buffer.size();
-    request.addBodyChunk(_raw_buffer);
-    _raw_buffer.clear();
+    // 받을 수 있는 데이터의 크기 계산
+    size_t remaining = _expected_body_size - _received_body_size;
+    size_t to_read = std::min((size_t)_raw_buffer.size(), remaining);
+    
+    if (to_read > 0) {
+        request.addBodyChunk(_raw_buffer.substr(0, to_read));
+        _raw_buffer.erase(0, to_read);
+        _received_body_size += to_read;
+    }
 
     if (_received_body_size >= _expected_body_size) {
         _parse_state = COMPLETE;

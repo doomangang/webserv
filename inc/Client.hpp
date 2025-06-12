@@ -58,6 +58,7 @@ public:
 	
 	// 유틸리티 함수
 	std::string         getCurrentTimestamp() const;
+	bool                isDeleteAllowedForLocation(const Location& loc, const std::string& file_path) const;
 	void                clearClient();
 	void				updateTime();
 

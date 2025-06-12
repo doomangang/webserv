@@ -301,6 +301,20 @@ std::string Client::resolveFilePath(const Location& location) const {
         return "./www" + path;
     }
     
+    // Upload location에 대한 특별한 처리
+    if (location.hasUploadStore()) {
+        std::cout << "[DEBUG] resolveFilePath() - Upload request detected" << std::endl;
+        std::string upload_dir = location.getUploadStore();
+        std::string loc_uri = location.getUri();
+        if (path.find(loc_uri) == 0) {
+            path = path.substr(loc_uri.length());
+        }
+        if (!path.empty() && path[0] != '/') {
+            path = "/" + path;
+        }
+        return upload_dir + path;
+    }
+    
     if ( !location.getRootPath().empty()) {
         root = location.getRootPath();
     } else if (!server.getRootPath().empty()) {
@@ -538,15 +552,19 @@ void Client::handleGetRequest(const Location& loc) {
 void Client::handlePostRequest(const Location& loc) {
     // POST 요청: 파일 업로드 또는 데이터 생성
     std::string path = request.getPath();
+    std::string body = request.getBody();
     
-    // 업로드 경로인지 확인
-    if (path.find("/upload") == 0 || loc.hasUploadStore()) {
+    std::cout << "[DEBUG] handlePostRequest() - Path: " << path << std::endl;
+    std::cout << "[DEBUG] handlePostRequest() - Body length: " << body.length() << std::endl;
+    std::cout << "[DEBUG] handlePostRequest() - Body content: [" << body << "]" << std::endl;
+    
+    // Location에 upload_store가 설정되어 있는지 확인
+    if (loc.hasUploadStore()) {
         handleFileUpload(loc);
         return;
     }
     
     // 일반적인 POST 요청: 데이터 생성/수정
-    std::string body = request.getBody();
     std::string filename = "post_data_" + getCurrentTimestamp() + ".txt";
     std::string file_path = resolveFilePath(loc) + "/" + filename;
     
@@ -584,37 +602,16 @@ void Client::handleDeleteRequest(const Location& loc) {
     std::string path = request.getPath();
     std::string file_path = resolveFilePath(loc);
     
-    // 안전 검사: 특정 디렉토리 내의 파일만 삭제 허용
-    if (path.find("/static") == 0 || path.find("/upload") == 0) {
-        struct stat file_stat;
-        if (stat(file_path.c_str(), &file_stat) == 0) {
-            if (S_ISREG(file_stat.st_mode)) {
-                // 파일 삭제 시도
-                if (unlink(file_path.c_str()) == 0) {
-                    response.setStatusCode(200); // OK
-                    response.setHeader("Content-Type", "application/json");
-                    
-                    std::string success_body = "{\n"
-                                              "  \"status\": \"success\",\n"
-                                              "  \"message\": \"File deleted successfully\",\n"
-                                              "  \"method\": \"DELETE\",\n"
-                                              "  \"path\": \"" + path + "\",\n"
-                                              "  \"deleted_file\": \"" + file_path + "\",\n"
-                                              "  \"timestamp\": \"" + getCurrentTimestamp() + "\"\n"
-                                              "}";
-                    
-                    response.setBody(success_body);
-                    response.setHeader("Content-Length", HttpUtils::toString(success_body.length()));
-                } else {
-                    prepareErrorResponse(403); // Forbidden - 삭제 권한 없음
-                }
-            } else {
-                prepareErrorResponse(400); // Bad Request - 디렉토리는 삭제 불가
-            }
-        } else {
-            prepareErrorResponse(404); // Not Found
-        }
-    } else {
+    std::cout << "[DEBUG] handleDeleteRequest() - Request path: " << path << std::endl;
+    std::cout << "[DEBUG] handleDeleteRequest() - Resolved file path: " << file_path << std::endl;
+    std::cout << "[DEBUG] handleDeleteRequest() - Location URI: " << loc.getUri() << std::endl;
+    std::cout << "[DEBUG] handleDeleteRequest() - Location has upload store: " << (loc.hasUploadStore() ? "yes" : "no") << std::endl;
+    if (loc.hasUploadStore()) {
+        std::cout << "[DEBUG] handleDeleteRequest() - Upload store path: " << loc.getUploadStore() << std::endl;
+    }
+    
+    // 안전 검사: Location 설정에 따른 삭제 허용 여부 확인
+    if (!isDeleteAllowedForLocation(loc, file_path)) {
         // 안전하지 않은 경로의 삭제 요청
         response.setStatusCode(403); // Forbidden
         response.setHeader("Content-Type", "application/json");
@@ -629,6 +626,36 @@ void Client::handleDeleteRequest(const Location& loc) {
         
         response.setBody(error_body);
         response.setHeader("Content-Length", HttpUtils::toString(error_body.length()));
+        return;
+    }
+    
+    struct stat file_stat;
+    if (stat(file_path.c_str(), &file_stat) == 0) {
+        if (S_ISREG(file_stat.st_mode)) {
+            // 파일 삭제 시도
+            if (unlink(file_path.c_str()) == 0) {
+                response.setStatusCode(200); // OK
+                response.setHeader("Content-Type", "application/json");
+                
+                std::string success_body = "{\n"
+                                          "  \"status\": \"success\",\n"
+                                          "  \"message\": \"File deleted successfully\",\n"
+                                          "  \"method\": \"DELETE\",\n"
+                                          "  \"path\": \"" + path + "\",\n"
+                                          "  \"deleted_file\": \"" + file_path + "\",\n"
+                                          "  \"timestamp\": \"" + getCurrentTimestamp() + "\"\n"
+                                          "}";
+                
+                response.setBody(success_body);
+                response.setHeader("Content-Length", HttpUtils::toString(success_body.length()));
+            } else {
+                prepareErrorResponse(403); // Forbidden - 삭제 권한 없음
+            }
+        } else {
+            prepareErrorResponse(400); // Bad Request - 디렉토리는 삭제 불가
+        }
+    } else {
+        prepareErrorResponse(404); // Not Found
     }
 }
 
@@ -689,4 +716,35 @@ std::string Client::getCurrentTimestamp() const {
     struct tm* timeinfo = localtime(&now);
     strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
     return std::string(buf);
+}
+
+bool Client::isDeleteAllowedForLocation(const Location& loc, const std::string& file_path) const {
+    // 1. upload_store가 설정된 location인 경우: 해당 업로드 디렉토리 내에서만 삭제 허용
+    if (loc.hasUploadStore()) {
+        std::string upload_dir = loc.getUploadStore();
+        // 파일 경로가 업로드 디렉토리 내에 있는지 확인
+        return file_path.find(upload_dir) == 0;
+    }
+    
+    // 2. root path가 설정된 location인 경우: 해당 root 디렉토리 내에서만 삭제 허용
+    if (!loc.getRootPath().empty()) {
+        std::string root_path = loc.getRootPath();
+        // 절대 경로로 정규화
+        if (!root_path.empty() && root_path[root_path.length() - 1] == '/') {
+            root_path.erase(root_path.length() - 1);
+        }
+        return file_path.find(root_path) == 0;
+    }
+    
+    // 3. 서버 전체 root 디렉토리 내에서만 삭제 허용 (기본 보안)
+    std::string server_root = server.getRootPath();
+    if (!server_root.empty()) {
+        if (!server_root.empty() && server_root[server_root.length() - 1] == '/') {
+            server_root.erase(server_root.length() - 1);
+        }
+        return file_path.find(server_root) == 0;
+    }
+    
+    // 4. 기본적으로 ./www 디렉토리 내에서만 삭제 허용 (최소한의 보안)
+    return file_path.find("./www") == 0;
 }

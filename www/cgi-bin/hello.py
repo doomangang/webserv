@@ -17,9 +17,9 @@ print("""<!DOCTYPE html>
     <meta charset="UTF-8">
     <title>CGI Hello World</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .info { background: #f0f0f0; padding: 20px; margin: 20px 0; }
-        .highlight { color: #007bff; font-weight: bold; }
+        body {{ font-family: Arial, sans-serif; margin: 40px; }}
+        .info {{ background: #f0f0f0; padding: 20px; margin: 20px 0; }}
+        .highlight {{ color: #007bff; font-weight: bold; }}
     </style>
 </head>
 <body>
