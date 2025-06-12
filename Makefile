@@ -1,7 +1,7 @@
 NAME    = webserv
 
 CC      = c++
-CFLAGS  = -Wall -Wextra -Werror -std=c++98 -fsanitize=address -fno-omit-frame-pointer -g
+CFLAGS  = -Wall -Wextra -Werror -std=c++98 -g
 CPPFLAGS= -Iinc
 
 SRC_DIR = src
