@@ -78,7 +78,11 @@ void	Client::readAndParse() {
         if (parser.getParseState() == COMPLETE) {
             setConnectionState(TO_CLIENT);
         } else if (parser.getParseState() == BAD_REQUEST) {
-            setConnectionState(END_CONNECTION);
+            // BAD_REQUEST인 경우 에러 응답을 보낸 후 연결 종료
+            if (!request.hasError()) {
+                request.setErrorCode(400); // 기본 Bad Request
+            }
+            setConnectionState(TO_CLIENT); // 에러 응답을 보내기 위해 TO_CLIENT로 설정
         } else {
             setConnectionState(READ_CONTINUE);
         }
@@ -132,47 +136,52 @@ bool Client::isParseComplete() const {
 }
 
 void Client::processRequest() {
-    // 요청 처리 로직
-    if (request.hasError()) {
-        prepareErrorResponse(request.getErrorCode());
+    // Parse 에러가 있거나 request 에러가 있는 경우
+    if (parser.getParseState() == BAD_REQUEST || request.hasError()) {
+        int error_code = request.getErrorCode();
+        if (error_code == 0) error_code = 400; // 기본 Bad Request
+        prepareErrorResponse(error_code);
         return;
     }
 
-    // 1. 메서드 검증
+    // 1. 잘못된 메서드 체크 (UNKNOWN_METHOD인 경우)
+    if (request.getMethod() == UNKNOWN_METHOD) {
+        prepareErrorResponse(405); // Method Not Allowed
+        return;
+    }
+
+    // 2. 메서드 허용 여부 체크
     if (!isMethodAllowed()) {
-        prepareErrorResponse(405);
+        prepareErrorResponse(405); // Method Not Allowed
         return;
     }
 
 	std::string path = request.getPath();
 	const Location& loc = server.getMatchingLocation(path);
     
-    // 2. 리다이렉트 체크
+    // 3. 리다이렉트 체크
     if (loc.hasRedirect()) {
         handleRedirect();
         return;
     }
     
-    // 3. CGI 체크
+    // 4. CGI 체크
     if (isCGIRequest(loc)) {
         handleCGI();
         return;
     }
     
-    // 4. 정적 파일/디렉토리 처리
-    std::string file_path = resolveFilePath(loc);
-    struct stat file_stat;
+    // 5. 메서드별 처리
+    Method method = request.getMethod();
     
-    if (stat(file_path.c_str(), &file_stat) == 0) {
-        if (S_ISDIR(file_stat.st_mode)) {
-            handleDirectoryListing(loc, file_path);
-        } else if (S_ISREG(file_stat.st_mode)) {
-            handleStaticFile(file_path);
-        }
-		else
-			prepareErrorResponse(403);
+    if (method == GET) {
+        handleGetRequest(loc);
+    } else if (method == POST) {
+        handlePostRequest(loc);
+    } else if (method == DELETE) {
+        handleDeleteRequest(loc);
     } else {
-        prepareErrorResponse(404);
+        prepareErrorResponse(405); // 이론적으로는 여기에 도달하지 않아야 함
     }
 }
 
@@ -184,6 +193,7 @@ void Client::prepareErrorResponse(int error_code) {
                            HttpUtils::toString(error_code) + 
                            "</h1></body></html>";
     response.setBody(error_body);
+    response.setHeader("Content-Length", HttpUtils::toString(error_body.length()));
 }
 
 bool Client::isMethodAllowed() const
@@ -208,29 +218,45 @@ void Client::handleRedirect()
     response.setStatusCode(location.getRedirectCode());
     response.setHeader("Location", location.getRedirectUrl());
     response.setBody("");
+    response.setHeader("Content-Length", "0");
 }
 
 bool Client::isCGIRequest(const Location& location) const {    
     const std::set<std::string>& cgi_exts = location.getCgiExtensions();
-	if (cgi_exts.empty())
-		return false;
-	
+    
 	std::string path = request.getPath();
-    size_t dot_pos = path.rfind('.');
-    if (dot_pos == std::string::npos) 
+	if (cgi_exts.empty()) {
 		return false;
+    }
+	
+    size_t dot_pos = path.rfind('.');
+    if (dot_pos == std::string::npos) {
+		return false;
+    }
     
     std::string extension = path.substr(dot_pos);
-    return cgi_exts.count(extension) > 0;
+    std::cout << "[DEBUG] Found extension: " << extension << std::endl;
+    
+    bool is_cgi = cgi_exts.count(extension) > 0;
+    std::cout << "[DEBUG] Is CGI request: " << (is_cgi ? "YES" : "NO") << std::endl;
+    
+    return is_cgi;
 }
 
 void Client::handleCGI() {
     std::string path = request.getPath();
     const Location& location = server.getMatchingLocation(path);
 
+    std::cout << "[DEBUG] handleCGI() - Original path: " << path << std::endl;
+    std::cout << "[DEBUG] handleCGI() - Location URI: " << location.getUri() << std::endl;
+    std::cout << "[DEBUG] handleCGI() - Location root: " << location.getRootPath() << std::endl;
+    std::cout << "[DEBUG] handleCGI() - Server root: " << server.getRootPath() << std::endl;
+
     response.setCgiState(1);
 
     std::string file_path = resolveFilePath(location);
+    std::cout << "[DEBUG] handleCGI() - Resolved file path: " << file_path << std::endl;
+    
     response._cgi_obj.setCgiPath(file_path);
 
     // 실제 location iterator 구현 (iterator 타입 일치)
@@ -253,8 +279,13 @@ void Client::handleCGI() {
     response._cgi_obj.execute(error_code);
     
     if (error_code != 0) {
+        std::cout << "[DEBUG] CGI execute failed with error: " << error_code << std::endl;
         response.setCgiState(2); // CGI 실패
         prepareErrorResponse(error_code);
+    } else {
+        std::cout << "[DEBUG] CGI execute succeeded, CGI state should be 1" << std::endl;
+        // CGI started successfully, state should already be 1
+        // Server event loop will handle reading from CGI pipes
     }
 }
 
@@ -262,6 +293,13 @@ void Client::handleCGI() {
 std::string Client::resolveFilePath(const Location& location) const {
     std::string path = request.getPath();
     std::string root = "";
+    
+    // CGI 요청에 대한 특별한 처리
+    if (location.getUri() == "/cgi-bin") {
+        std::cout << "[DEBUG] resolveFilePath() - CGI request detected" << std::endl;
+        // CGI 파일들은 ./www/cgi-bin/ 에 있음
+        return "./www" + path;
+    }
     
     if ( !location.getRootPath().empty()) {
         root = location.getRootPath();
@@ -476,3 +514,179 @@ void Client::setResponse(const Response& response) { this->response = response; 
 void Client::setWriter(const ResponseWriter& writer) { this->writer = writer; }
 void Client::setParser(const RequestParser& parser) { this->parser = parser; }
 void Client::setConnectionState(ConnectionState state) { _connection_state = state; }
+
+// 메서드별 처리 함수들
+
+void Client::handleGetRequest(const Location& loc) {
+    // GET 요청: 기존의 정적 파일/디렉토리 처리 로직
+    std::string file_path = resolveFilePath(loc);
+    struct stat file_stat;
+    
+    if (stat(file_path.c_str(), &file_stat) == 0) {
+        if (S_ISDIR(file_stat.st_mode)) {
+            handleDirectoryListing(loc, file_path);
+        } else if (S_ISREG(file_stat.st_mode)) {
+            handleStaticFile(file_path);
+        } else {
+            prepareErrorResponse(403);
+        }
+    } else {
+        prepareErrorResponse(404);
+    }
+}
+
+void Client::handlePostRequest(const Location& loc) {
+    // POST 요청: 파일 업로드 또는 데이터 생성
+    std::string path = request.getPath();
+    
+    // 업로드 경로인지 확인
+    if (path.find("/upload") == 0 || loc.hasUploadStore()) {
+        handleFileUpload(loc);
+        return;
+    }
+    
+    // 일반적인 POST 요청: 데이터 생성/수정
+    std::string body = request.getBody();
+    std::string filename = "post_data_" + getCurrentTimestamp() + ".txt";
+    std::string file_path = resolveFilePath(loc) + "/" + filename;
+    
+    // 요청 바디를 파일로 저장
+    std::ofstream file(file_path.c_str());
+    if (file.is_open()) {
+        file << "POST Request Data\n";
+        file << "Timestamp: " << getCurrentTimestamp() << "\n";
+        file << "Path: " << path << "\n";
+        file << "Content-Length: " << body.length() << "\n";
+        file << "Body:\n" << body << "\n";
+        file.close();
+        
+        response.setStatusCode(201); // Created
+        response.setHeader("Content-Type", "application/json");
+        
+        std::string success_body = "{\n"
+                                  "  \"status\": \"success\",\n"
+                                  "  \"message\": \"Data created successfully\",\n"
+                                  "  \"method\": \"POST\",\n"
+                                  "  \"path\": \"" + path + "\",\n"
+                                  "  \"created_file\": \"" + filename + "\",\n"
+                                  "  \"timestamp\": \"" + getCurrentTimestamp() + "\"\n"
+                                  "}";
+        
+        response.setBody(success_body);
+        response.setHeader("Content-Length", HttpUtils::toString(success_body.length()));
+    } else {
+        prepareErrorResponse(500); // Internal Server Error
+    }
+}
+
+void Client::handleDeleteRequest(const Location& loc) {
+    // DELETE 요청: 실제 파일 삭제
+    std::string path = request.getPath();
+    std::string file_path = resolveFilePath(loc);
+    
+    // 안전 검사: 특정 디렉토리 내의 파일만 삭제 허용
+    if (path.find("/static") == 0 || path.find("/upload") == 0) {
+        struct stat file_stat;
+        if (stat(file_path.c_str(), &file_stat) == 0) {
+            if (S_ISREG(file_stat.st_mode)) {
+                // 파일 삭제 시도
+                if (unlink(file_path.c_str()) == 0) {
+                    response.setStatusCode(200); // OK
+                    response.setHeader("Content-Type", "application/json");
+                    
+                    std::string success_body = "{\n"
+                                              "  \"status\": \"success\",\n"
+                                              "  \"message\": \"File deleted successfully\",\n"
+                                              "  \"method\": \"DELETE\",\n"
+                                              "  \"path\": \"" + path + "\",\n"
+                                              "  \"deleted_file\": \"" + file_path + "\",\n"
+                                              "  \"timestamp\": \"" + getCurrentTimestamp() + "\"\n"
+                                              "}";
+                    
+                    response.setBody(success_body);
+                    response.setHeader("Content-Length", HttpUtils::toString(success_body.length()));
+                } else {
+                    prepareErrorResponse(403); // Forbidden - 삭제 권한 없음
+                }
+            } else {
+                prepareErrorResponse(400); // Bad Request - 디렉토리는 삭제 불가
+            }
+        } else {
+            prepareErrorResponse(404); // Not Found
+        }
+    } else {
+        // 안전하지 않은 경로의 삭제 요청
+        response.setStatusCode(403); // Forbidden
+        response.setHeader("Content-Type", "application/json");
+        
+        std::string error_body = "{\n"
+                                "  \"status\": \"error\",\n"
+                                "  \"message\": \"Delete operation not allowed on this path\",\n"
+                                "  \"method\": \"DELETE\",\n"
+                                "  \"path\": \"" + path + "\",\n"
+                                "  \"timestamp\": \"" + getCurrentTimestamp() + "\"\n"
+                                "}";
+        
+        response.setBody(error_body);
+        response.setHeader("Content-Length", HttpUtils::toString(error_body.length()));
+    }
+}
+
+void Client::handleFileUpload(const Location& loc) {
+    // 파일 업로드 처리
+    std::string upload_dir = loc.getUploadStore();
+    if (upload_dir.empty()) {
+        upload_dir = "./www/uploads"; // 기본 업로드 디렉토리
+    }
+    
+    // 업로드 디렉토리가 존재하는지 확인
+    struct stat dir_stat;
+    if (stat(upload_dir.c_str(), &dir_stat) != 0 || !S_ISDIR(dir_stat.st_mode)) {
+        prepareErrorResponse(500); // Internal Server Error - 업로드 디렉토리 없음
+        return;
+    }
+    
+    std::string body = request.getBody();
+    if (body.empty()) {
+        prepareErrorResponse(400); // Bad Request - 빈 바디
+        return;
+    }
+    
+    // 업로드된 파일명 생성
+    std::string filename = "upload_" + getCurrentTimestamp() + ".txt";
+    std::string file_path = upload_dir + "/" + filename;
+    
+    // 파일 저장
+    std::ofstream file(file_path.c_str(), std::ios::binary);
+    if (file.is_open()) {
+        file << body;
+        file.close();
+        
+        response.setStatusCode(201); // Created
+        response.setHeader("Content-Type", "application/json");
+        
+        std::string success_body = "{\n"
+                                  "  \"status\": \"success\",\n"
+                                  "  \"message\": \"File uploaded successfully\",\n"
+                                  "  \"method\": \"POST\",\n"
+                                  "  \"path\": \"" + request.getPath() + "\",\n"
+                                  "  \"uploaded_file\": \"" + filename + "\",\n"
+                                  "  \"file_size\": " + HttpUtils::toString(body.length()) + ",\n"
+                                  "  \"upload_dir\": \"" + upload_dir + "\",\n"
+                                  "  \"timestamp\": \"" + getCurrentTimestamp() + "\"\n"
+                                  "}";
+        
+        response.setBody(success_body);
+        response.setHeader("Content-Length", HttpUtils::toString(success_body.length()));
+    } else {
+        prepareErrorResponse(500); // Internal Server Error - 파일 쓰기 실패
+    }
+}
+
+std::string Client::getCurrentTimestamp() const {
+    time_t now = time(0);
+    char buf[100];
+    struct tm* timeinfo = localtime(&now);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
+    return std::string(buf);
+}

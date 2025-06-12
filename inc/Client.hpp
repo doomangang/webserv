@@ -49,6 +49,15 @@ public:
 	std::string         resolveFilePath(const Location&) const;
 	void                handleStaticFile(const std::string&);
 	void                handleDirectoryListing(const Location&, const std::string& dir_path);
+	
+	// 메서드별 처리 함수들
+	void                handleGetRequest(const Location& loc);
+	void                handlePostRequest(const Location& loc);
+	void                handleDeleteRequest(const Location& loc);
+	void                handleFileUpload(const Location& loc);
+	
+	// 유틸리티 함수
+	std::string         getCurrentTimestamp() const;
 	void                clearClient();
 	void				updateTime();
 
