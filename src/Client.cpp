@@ -233,9 +233,21 @@ void Client::handleCGI() {
     std::string file_path = resolveFilePath(location);
     response._cgi_obj.setCgiPath(file_path);
 
-    // CGI 환경 변수 초기화 (임시로 빈 location iterator 전달)
-    // TODO: 실제 location iterator 구현 필요
-    // response._cgi_obj.initEnv(request, location_iterator);
+    // 실제 location iterator 구현 (iterator 타입 일치)
+    std::vector<Location>& locations = const_cast<std::vector<Location>&>(server.getLocations());
+    std::vector<Location>::iterator location_iterator = locations.end();
+    for (std::vector<Location>::iterator it = locations.begin(); it != locations.end(); ++it) {
+        if (&(*it) == &location) {
+            location_iterator = it;
+            break;
+        }
+    }
+    if (location_iterator != locations.end()) {
+        response._cgi_obj.initEnv(request, location_iterator);
+    } else {
+        // fallback: 첫 location 사용 (혹은 적절한 예외 처리)
+        response._cgi_obj.initEnv(request, locations.begin());
+    }
     
     short error_code = 0;
     response._cgi_obj.execute(error_code);
@@ -245,6 +257,7 @@ void Client::handleCGI() {
         prepareErrorResponse(error_code);
     }
 }
+
 
 std::string Client::resolveFilePath(const Location& location) const {
     std::string path = request.getPath();
