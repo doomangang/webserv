@@ -6,6 +6,10 @@ RequestParser::RequestParser()
     :   _parse_state(NONE),
         _max_body_size(1048576),      // 1MB 기본값
         _max_header_size(8192),
+        _is_chunked(GENERAL),
+        _chunk_state(CHUNK_SIZE),
+        _current_chunk_size(0),
+        _current_chunk_received(0),
         _expected_body_size(0),
         _received_body_size(0),
         _header_end_pos(0) {
@@ -105,6 +109,7 @@ void RequestParser::parseRequestLine(Request& request) {
     // HTTP 메서드 파싱
     Method method = HttpUtils::stringToMethod(parts[0]);
     if (method == UNKNOWN_METHOD) {
+        request.setErrorCode(405); // Method Not Allowed for unsupported method
         _parse_state = BAD_REQUEST;
         return;
     }
@@ -121,6 +126,11 @@ void RequestParser::parseRequestLine(Request& request) {
 }
 
 void RequestParser::parseHeaders(Request& request) {
+    // 이미 BAD_REQUEST 상태라면 처리하지 않음
+    if (_parse_state == BAD_REQUEST) {
+        return;
+    }
+    
     size_t pos = _raw_buffer.find("\r\n\r\n");
     if (pos == std::string::npos) {
         _parse_state = HEADERS_INCOMPLETE;
@@ -292,6 +302,11 @@ bool RequestParser::parseChunkSize(const std::string& line) {
 }
 
 void RequestParser::parseBody(Request& request) {
+    // 이미 BAD_REQUEST 상태라면 처리하지 않음
+    if (_parse_state == BAD_REQUEST) {
+        return;
+    }
+    
     if (_expected_body_size == 0) {
         _parse_state = COMPLETE;
         return;

@@ -5,9 +5,6 @@ enum Method {
     GET,
     POST,
     DELETE,
-    PUT,
-    HEAD,
-    EMPTY,
     UNKNOWN_METHOD
 };
 

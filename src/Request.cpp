@@ -191,8 +191,7 @@ std::string Request::getMethodStr() const {
         case GET: return "GET";
         case POST: return "POST";
         case DELETE: return "DELETE";
-        case PUT: return "PUT";
-        case HEAD: return "HEAD";
+        case UNKNOWN_METHOD: return "UNKNOWN";
         default: return "UNKNOWN";
     }
 }

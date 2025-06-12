@@ -449,10 +449,7 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
         if (w == "GET") methods.insert(GET);
         else if (w == "POST") methods.insert(POST);
         else if (w == "DELETE") methods.insert(DELETE);
-        else if (w == "PUT") methods.insert(PUT);
-        else if (w == "HEAD") methods.insert(HEAD);
-        else if (w == "EMPTY") methods.insert(EMPTY);
-        else methods.insert(UNKNOWN_METHOD);
+        // Ignore unsupported methods (PUT, HEAD, etc.) - don't add them to the set
     }
     
     loc.setAllowMethods(methods);
