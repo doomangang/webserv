@@ -459,7 +459,7 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
     // "methods GET POST DELETE"
     loc.clearAllowMethods();
 
-    std::vector<std::string> words = HttpUtils::splitWords(stmt.substr(14));
+    std::vector<std::string> words = HttpUtils::splitWords(stmt.substr(13));
     std::set<Method> methods;
     
     for (size_t i = 0; i < words.size(); ++i) {

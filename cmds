@@ -1,0 +1,368 @@
+# Webserv 평가 테스트 명령어 모음
+
+## 1. Basic Implementation
+
+### I/O Multiplexing 확인
+```bash
+# 코드에서 select/poll/epoll 사용 확인
+grep -n "select\|poll\|epoll" src/*.cpp
+
+# 메인 루프에서 read/write 동시 체크 확인
+grep -A 10 -B 5 "select\|poll" src/ServerManager.cpp
+```
+
+### Error handling 체크
+```bash
+# recv/send 에러 처리 확인
+grep -n "recv\|send\|read\|write" src/*.cpp | grep -A 3 -B 3 "errno"
+
+# errno 체크가 있으면 안됨 (0점)
+grep -n "errno" src/*.cpp
+```
+
+## 2. Configuration Tests
+
+### 다중 서버 설정 테스트
+```bash
+# config 파일 예시 (multi_server.conf)
+cat > multi_server.conf << 'EOF'
+server {
+    listen 127.0.0.1:8080;
+    server_name server1.local;
+    root ./www1;
+}
+server {
+    listen 127.0.0.1:8081;
+    server_name server2.local;
+    root ./www2;
+}
+EOF
+
+# 테스트
+./webserv multi_server.conf &
+curl http://127.0.0.1:8080/
+curl http://127.0.0.1:8081/
+```
+
+### 다른 호스트명 테스트
+```bash
+# 같은 포트, 다른 호스트명
+curl --resolve example.com:8080:127.0.0.1 http://example.com:8080/
+curl --resolve test.com:8080:127.0.0.1 http://test.com:8080/
+```
+
+### 에러 페이지 테스트
+```bash
+# 404 에러 테스트
+curl -v http://127.0.0.1:8080/nonexistent
+curl -v http://127.0.0.1:8080/does/not/exist
+```
+
+### Client body 제한 테스트
+```bash
+# 작은 데이터 (성공해야 함)
+curl -X POST -H "Content-Type: text/plain" \
+     --data "small data" \
+     http://127.0.0.1:8080/upload
+
+# 큰 데이터 (실패해야 함 - 413 Payload Too Large)
+curl -X POST -H "Content-Type: text/plain" \
+     --data "$(python3 -c 'print("A" * 10000000)')" \
+     http://127.0.0.1:8080/upload
+```
+
+### 라우팅 테스트
+```bash
+# 다른 디렉토리 라우팅
+curl http://127.0.0.1:8080/static/
+curl http://127.0.0.1:8080/uploads/
+curl http://127.0.0.1:8080/cgi-bin/
+```
+
+### 기본 파일 테스트
+```bash
+# 디렉토리 요청시 index 파일 서빙
+curl http://127.0.0.1:8080/
+curl http://127.0.0.1:8080/subdir/
+```
+
+### 메서드 허용/거부 테스트
+```bash
+# 허용된 메서드
+curl -X GET http://127.0.0.1:8080/readonly/
+curl -X POST http://127.0.0.1:8080/uploads/
+
+# 거부된 메서드 (405 Method Not Allowed)
+curl -X DELETE http://127.0.0.1:8080/readonly/
+curl -X POST http://127.0.0.1:8080/readonly/
+```
+
+## 3. Basic Checks
+
+### GET, POST, DELETE 테스트
+```bash
+# GET 테스트
+curl -v http://127.0.0.1:8080/index.html
+curl -v http://127.0.0.1:8080/static/image.jpg
+
+# POST 테스트 (파일 업로드)
+curl -X POST -H "Content-Type: text/plain" \
+     --data "Hello, World!" \
+     http://127.0.0.1:8080/uploads/
+
+# DELETE 테스트
+curl -X DELETE http://127.0.0.1:8080/uploads/testfile.txt
+```
+
+### 알 수 없는 메서드 테스트
+```bash
+# 서버가 크래시하지 않아야 함
+curl -X UNKNOWN http://127.0.0.1:8080/
+curl -X PATCH http://127.0.0.1:8080/
+curl -X INVALID_METHOD http://127.0.0.1:8080/
+```
+
+### 파일 업로드/다운로드 테스트
+```bash
+# 파일 업로드
+echo "Test content" > testfile.txt
+curl -X POST -T testfile.txt http://127.0.0.1:8080/uploads/
+
+# 업로드된 파일 다운로드
+curl http://127.0.0.1:8080/uploads/testfile.txt
+
+# 파일 삭제
+curl -X DELETE http://127.0.0.1:8080/uploads/testfile.txt
+```
+
+### Telnet 테스트
+```bash
+# Raw HTTP 요청
+telnet 127.0.0.1 8080
+# 연결 후 입력:
+GET / HTTP/1.1
+Host: 127.0.0.1:8080
+
+# POST 요청
+telnet 127.0.0.1 8080
+# 연결 후 입력:
+POST /uploads/ HTTP/1.1
+Host: 127.0.0.1:8080
+Content-Length: 12
+
+Hello World!
+```
+
+## 4. CGI Tests
+
+### CGI 스크립트 준비
+```bash
+# Python CGI 스크립트 생성
+mkdir -p ./www/cgi-bin
+cat > ./www/cgi-bin/test.py << 'EOF'
+#!/usr/bin/env python3
+import os
+import sys
+
+print("Content-Type: text/html\r")
+print("\r")
+print("<html><body>")
+print("<h1>CGI Test</h1>")
+print(f"<p>Method: {os.environ.get('REQUEST_METHOD', 'Unknown')}</p>")
+print(f"<p>Query: {os.environ.get('QUERY_STRING', 'None')}</p>")
+print("</body></html>")
+EOF
+
+chmod +x ./www/cgi-bin/test.py
+```
+
+### CGI GET 테스트
+```bash
+curl http://127.0.0.1:8080/cgi-bin/test.py
+curl http://127.0.0.1:8080/cgi-bin/test.py?name=john&age=25
+```
+
+### CGI POST 테스트
+```bash
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" \
+     --data "name=john&age=25" \
+     http://127.0.0.1:8080/cgi-bin/test.py
+```
+
+### CGI 에러 처리 테스트
+```bash
+# 무한 루프 스크립트
+cat > ./www/cgi-bin/infinite.py << 'EOF'
+#!/usr/bin/env python3
+print("Content-Type: text/html\r")
+print("\r")
+while True:
+    pass
+EOF
+chmod +x ./www/cgi-bin/infinite.py
+
+# 에러 스크립트
+cat > ./www/cgi-bin/error.py << 'EOF'
+#!/usr/bin/env python3
+import sys
+print("Content-Type: text/html\r")
+print("\r")
+sys.exit(1)
+EOF
+chmod +x ./www/cgi-bin/error.py
+
+# 테스트 (서버가 크래시하지 않아야 함)
+curl http://127.0.0.1:8080/cgi-bin/error.py
+timeout 5s curl http://127.0.0.1:8080/cgi-bin/infinite.py
+```
+
+## 5. Port Issues
+
+### 같은 포트 중복 테스트
+```bash
+# 잘못된 설정 파일
+cat > duplicate_port.conf << 'EOF'
+server {
+    listen 127.0.0.1:8080;
+    server_name server1.local;
+}
+server {
+    listen 127.0.0.1:8080;
+    server_name server2.local;
+}
+EOF
+
+# 실패해야 함
+./webserv duplicate_port.conf
+```
+
+### 다중 서버 동시 실행 테스트
+```bash
+# 첫 번째 서버 시작
+./webserv config1.conf &
+SERVER1_PID=$!
+
+# 두 번째 서버 시작 (같은 포트 사용시 실패해야 함)
+./webserv config2.conf &
+SERVER2_PID=$!
+
+# 포트 사용 확인
+netstat -ln | grep :8080
+lsof -i :8080
+
+# 정리
+kill $SERVER1_PID $SERVER2_PID
+```
+
+## 6. Siege & Stress Tests
+
+### Siege 설치 및 기본 테스트
+```bash
+# macOS
+brew install siege
+
+# 기본 가용성 테스트 (99.5% 이상이어야 함)
+siege -c 10 -t 30s http://127.0.0.1:8080/
+
+# 무한 테스트 (서버가 죽지 않아야 함)
+siege -c 5 -d 1 -r 100 http://127.0.0.1:8080/
+
+# 대량 동시 접속 테스트
+siege -c 50 -t 60s http://127.0.0.1:8080/
+
+# 벤치마크 모드 (-b)
+siege -b -c 10 -t 30s http://127.0.0.1:8080/
+```
+
+### 메모리 누수 체크
+```bash
+# 메모리 사용량 모니터링 (별도 터미널에서)
+while true; do
+    ps aux | grep webserv | grep -v grep
+    sleep 5
+done
+
+# macOS에서 메모리 체크
+top -pid $(pgrep webserv)
+
+# 또는
+ps -o pid,rss,vsz,command -p $(pgrep webserv)
+```
+
+### 연결 상태 체크
+```bash
+# 활성 연결 확인
+netstat -an | grep :8080
+ss -tuln | grep :8080
+
+# TIME_WAIT 상태 확인 (너무 많으면 문제)
+netstat -an | grep TIME_WAIT | grep :8080 | wc -l
+```
+
+## 7. 기타 유용한 테스트
+
+### 대용량 파일 테스트
+```bash
+# 큰 파일 생성
+dd if=/dev/zero of=large_file.txt bs=1M count=100
+
+# 업로드 테스트
+curl -X POST -T large_file.txt http://127.0.0.1:8080/uploads/
+
+# 다운로드 테스트
+curl -o downloaded_file.txt http://127.0.0.1:8080/uploads/large_file.txt
+```
+
+### 동시 접속 테스트
+```bash
+# 백그라운드에서 여러 요청
+for i in {1..20}; do
+    curl http://127.0.0.1:8080/ &
+done
+wait
+```
+
+### 리다이렉트 테스트
+```bash
+# 리다이렉트 확인
+curl -v http://127.0.0.1:8080/old
+curl -L http://127.0.0.1:8080/old  # 자동 팔로우
+```
+
+### 헤더 체크
+```bash
+# 응답 헤더 확인
+curl -I http://127.0.0.1:8080/
+curl -v http://127.0.0.1:8080/ 2>&1 | grep -E "^[<>]"
+```
+
+## 8. 테스트 스크립트 예시
+
+```bash
+#!/bin/bash
+# comprehensive_test.sh
+
+echo "=== Webserv Comprehensive Test ==="
+
+# 기본 연결 테스트
+echo "1. Basic connection test..."
+curl -s http://127.0.0.1:8080/ > /dev/null && echo "✓ GET /" || echo "✗ GET /"
+
+# 메서드 테스트
+echo "2. Method tests..."
+curl -s -X GET http://127.0.0.1:8080/ > /dev/null && echo "✓ GET" || echo "✗ GET"
+curl -s -X POST --data "test" http://127.0.0.1:8080/uploads/ > /dev/null && echo "✓ POST" || echo "✗ POST"
+
+# 에러 처리 테스트
+echo "3. Error handling..."
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/nonexistent)
+[ "$STATUS" = "404" ] && echo "✓ 404 Error" || echo "✗ 404 Error (got $STATUS)"
+
+# CGI 테스트
+echo "4. CGI test..."
+curl -s http://127.0.0.1:8080/cgi-bin/test.py | grep -q "CGI Test" && echo "✓ CGI" || echo "✗ CGI"
+
+echo "Test completed!"
+```
+
+이 명령어들을 사용해서 각 평가 항목을 체크할 수 있습니다!
