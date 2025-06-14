@@ -21,18 +21,7 @@ void	Client::readAndParse() {
             return;
         }
         
-        int saved_errno = errno;
-        if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK) {
-            Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "recv() would block on fd %d (EAGAIN/EWOULDBLOCK)", _fd);
-            setConnectionState(READ_CONTINUE);
-            return;
-        }
-        
-        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "recv() failed on fd %d: %s (errno=%d)", 
-                      _fd, strerror(saved_errno), saved_errno);
-        request.setErrorCode(500);
-        parser.reset();
-        request.setStatus(BAD_REQUEST);
+        Logger::logMsg(ERROR, CONSOLE_OUTPUT, "recv() failed on fd %d", _fd);
         setConnectionState(END_CONNECTION);
         return;
     }
@@ -103,9 +92,13 @@ void	Client::findSetConfigs(const std::vector<Server>& servers) {
         return ;
     }
 	
+
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "findSetConfigs called with %zu servers", servers.size());
+
 	const Server* matched = &servers[0];
 	std::string host = request.getHeaderValue("host");
-
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Host header: [%s]", host.c_str());
+    
 	size_t colon_pos = host.find(':');
 	if (colon_pos != std::string::npos)
 		host = host.substr(0, colon_pos);
@@ -126,8 +119,8 @@ void	Client::findSetConfigs(const std::vector<Server>& servers) {
     }
 
 	server = *matched;
-
-	// Location 
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Selected server: host=%s, port=%d, root=%s", 
+                  matched->getHost().c_str(), matched->getPort(), matched->getRootPath().c_str());
 }
 
 bool Client::isParseComplete() const {
@@ -136,32 +129,38 @@ bool Client::isParseComplete() const {
 }
 
 void Client::processRequest() {
+    std::cout << "[DEBUG] Client::processRequest started for fd: " << _fd << std::endl;
     // Parse 에러가 있거나 request 에러가 있는 경우
     if (parser.getParseState() == BAD_REQUEST || request.hasError()) {
         int error_code = request.getErrorCode();
         if (error_code == 0) error_code = 400; // 기본 Bad Request
+        std::cout << "[DEBUG] Found parse/request error, calling prepareErrorResponse with code: " << error_code << std::endl;
         prepareErrorResponse(error_code);
         return;
     }
 
     // 1. 잘못된 메서드 체크 (UNKNOWN_METHOD인 경우)
     if (request.getMethod() == UNKNOWN_METHOD) {
+        std::cout << "[DEBUG] Unknown method detected, calling prepareErrorResponse with 405" << std::endl;
         prepareErrorResponse(405); // Method Not Allowed
         return;
     }
 
-    // 2. 메서드 허용 여부 체크
-    if (!isMethodAllowed()) {
-        prepareErrorResponse(405); // Method Not Allowed
-        return;
-    }
-
-	std::string path = request.getPath();
-	const Location& loc = server.getMatchingLocation(path);
+    std::cout << "[DEBUG] Request processing continuing with method: " << request.getMethodStr() << std::endl;
+    std::string path = request.getPath();
+    const Location& loc = server.getMatchingLocation(path);
     
-    // 3. 리다이렉트 체크
+    // 2. 리다이렉트 체크 (메서드 체크보다 우선)
     if (loc.hasRedirect()) {
+        std::cout << "[DEBUG] Redirect detected, bypassing method check" << std::endl;
         handleRedirect();
+        return;
+    }
+    
+    // 3. 메서드 허용 여부 체크 (리다이렉트가 없는 경우에만)
+    if (!isMethodAllowed()) {
+        std::cout << "[DEBUG] Method not allowed, calling prepareErrorResponse with 405" << std::endl;
+        prepareErrorResponse(405); // Method Not Allowed
         return;
     }
     
@@ -186,15 +185,22 @@ void Client::processRequest() {
 }
 
 void Client::prepareErrorResponse(int error_code) {
-    response.setStatusCode(error_code);
-    response.setHeader("Content-Type", "text/html");
+    static int prepare_call_count = 0;
+    prepare_call_count++;
     
-    std::string error_body = "<html><body><h1>Error " + 
-                           HttpUtils::toString(error_code) + 
-                           "</h1></body></html>";
-    response.setBody(error_body);
-    response.setHeader("Content-Length", HttpUtils::toString(error_body.length()));
+    std::cout << "[DEBUG] Client::prepareErrorResponse called #" << prepare_call_count 
+              << " for error code: " << error_code 
+              << " on fd: " << _fd << std::endl;
+    
+    // 호출 스택 정보 (간단한 버전)
+    std::cout << "[DEBUG] Call from Client::prepareErrorResponse" << std::endl;
+    
+    // Response::setErrorResponse를 사용하여 서버 설정의 에러 페이지 활용
+    response.setErrorResponse(error_code, server);
+    
+    std::cout << "[DEBUG] Client::prepareErrorResponse completed #" << prepare_call_count << std::endl;
 }
+
 
 bool Client::isMethodAllowed() const
 {
@@ -215,10 +221,20 @@ void Client::handleRedirect()
     std::string path = request.getPath();
     const Location& location = server.getMatchingLocation(path);
 
-    response.setStatusCode(location.getRedirectCode());
-    response.setHeader("Location", location.getRedirectUrl());
-    response.setBody("");
-    response.setHeader("Content-Length", "0");
+    std::cout << "[DEBUG] handleRedirect: path=[" << path << "]" << std::endl;
+    std::cout << "[DEBUG] hasRedirect=" << location.hasRedirect() << std::endl;
+    
+    if (location.hasRedirect()) {
+        int code = location.getRedirectCode();
+        std::string url = location.getRedirectUrl();
+        
+        std::cout << "[DEBUG] Redirect values: code=" << code << ", url=[" << url << "]" << std::endl;
+        
+        response.setStatusCode(code);
+        response.setHeader("Location", url);
+        response.setBody("");
+        response.setHeader("Content-Length", "0");
+    }
 }
 
 bool Client::isCGIRequest(const Location& location) const {    
@@ -294,16 +310,21 @@ std::string Client::resolveFilePath(const Location& location) const {
     std::string path = request.getPath();
     std::string root = "";
     
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: request path=[%s]", path.c_str());
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: location URI=[%s]", location.getUri().c_str());
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: location root=[%s]", location.getRootPath().c_str());
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: server root=[%s]", server.getRootPath().c_str());
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: server port=%d", server.getPort());
+    
     // CGI 요청에 대한 특별한 처리
     if (location.getUri() == "/cgi-bin") {
-        std::cout << "[DEBUG] resolveFilePath() - CGI request detected" << std::endl;
-        // CGI 파일들은 ./www/cgi-bin/ 에 있음
+        Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: CGI request detected");
         return "./www" + path;
     }
     
     // Upload location에 대한 특별한 처리
     if (location.hasUploadStore()) {
-        std::cout << "[DEBUG] resolveFilePath() - Upload request detected" << std::endl;
+        Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: Upload request detected");
         std::string upload_dir = location.getUploadStore();
         std::string loc_uri = location.getUri();
         if (path.find(loc_uri) == 0) {
@@ -315,17 +336,26 @@ std::string Client::resolveFilePath(const Location& location) const {
         return upload_dir + path;
     }
     
-    if ( !location.getRootPath().empty()) {
+    // 핵심 수정: Root path 결정과 경로 처리 로직
+    std::string loc_uri = location.getUri();
+    
+    if (!location.getRootPath().empty()) {
+        // Location에 별도 root가 설정된 경우: location prefix 제거 후 location root 사용
         root = location.getRootPath();
-    } else if (!server.getRootPath().empty()) {
+        Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: using location root, removing prefix");
+        
+        if (loc_uri != "/" && path.find(loc_uri) == 0) {
+            path = path.substr(loc_uri.length());
+            Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: after prefix removal=[%s]", path.c_str());
+        }
+    } else {
+        // Location에 별도 root가 없는 경우: server root 사용, prefix 제거하지 않음
         root = server.getRootPath();
+        Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: using server root, keeping full path");
+        // path는 그대로 유지 (prefix 제거하지 않음)
     }
     
-    // Remove location prefix from path
-	std::string loc_uri = location.getUri();
-	if (path.find(loc_uri) == 0) {
-		path = path.substr(loc_uri.length());
-	}
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: selected root=[%s]", root.c_str());
 
     if (!root.empty() && root[root.length() - 1] == '/')
         root.erase(root.length() - 1);
@@ -335,14 +365,18 @@ std::string Client::resolveFilePath(const Location& location) const {
         path = "/" + path;
     }
     
-    return root + path;
+    std::string final_path = root + path;
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "resolveFilePath: final path=[%s]", final_path.c_str());
+
+    return final_path;
 }
 
 void Client::handleStaticFile(const std::string& file_path)
 {
     std::ifstream file(file_path.c_str(), std::ios::binary);
-    
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "handleStaticFile: trying to read [%s]", file_path.c_str());
     if (!file) {
+                Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "File not found: [%s]", file_path.c_str());
         prepareErrorResponse(403);
         return;
     }
@@ -660,28 +694,43 @@ void Client::handleDeleteRequest(const Location& loc) {
 }
 
 void Client::handleFileUpload(const Location& loc) {
-    // 파일 업로드 처리
     std::string upload_dir = loc.getUploadStore();
     if (upload_dir.empty()) {
-        upload_dir = "./www/uploads"; // 기본 업로드 디렉토리
+        upload_dir = "./www/uploads";
     }
     
     // 업로드 디렉토리가 존재하는지 확인
     struct stat dir_stat;
     if (stat(upload_dir.c_str(), &dir_stat) != 0 || !S_ISDIR(dir_stat.st_mode)) {
-        prepareErrorResponse(500); // Internal Server Error - 업로드 디렉토리 없음
+        prepareErrorResponse(500);
         return;
     }
     
     std::string body = request.getBody();
     if (body.empty()) {
-        prepareErrorResponse(400); // Bad Request - 빈 바디
+        prepareErrorResponse(400);
         return;
     }
     
-    // 업로드된 파일명 생성
-    std::string filename = "upload_" + getCurrentTimestamp() + ".txt";
+    // 🔧 URL에서 파일명 추출
+    std::string request_path = request.getPath();
+    std::string filename;
+    
+    // /uploads/test.txt -> test.txt 추출
+    size_t last_slash = request_path.rfind('/');
+    if (last_slash != std::string::npos && last_slash + 1 < request_path.length()) {
+        filename = request_path.substr(last_slash + 1);
+    }
+    
+    // 파일명이 없거나 비어있으면 기본 파일명 사용
+    if (filename.empty() || filename == "/") {
+        filename = "upload_" + getCurrentTimestamp() + ".txt";
+    }
+    
+    std::cout << "[DEBUG] Extracted filename: '" << filename << "'" << std::endl;
+    
     std::string file_path = upload_dir + "/" + filename;
+    std::cout << "[DEBUG] Final file path: '" << file_path << "'" << std::endl;
     
     // 파일 저장
     std::ofstream file(file_path.c_str(), std::ios::binary);
@@ -689,7 +738,7 @@ void Client::handleFileUpload(const Location& loc) {
         file << body;
         file.close();
         
-        response.setStatusCode(201); // Created
+        response.setStatusCode(201);
         response.setHeader("Content-Type", "application/json");
         
         std::string success_body = "{\n"
@@ -697,7 +746,7 @@ void Client::handleFileUpload(const Location& loc) {
                                   "  \"message\": \"File uploaded successfully\",\n"
                                   "  \"method\": \"POST\",\n"
                                   "  \"path\": \"" + request.getPath() + "\",\n"
-                                  "  \"uploaded_file\": \"" + filename + "\",\n"
+                                  "  \"uploaded_file\": \"" + filename + "\",\n"  // ✅ 실제 사용된 파일명
                                   "  \"file_size\": " + HttpUtils::toString(body.length()) + ",\n"
                                   "  \"upload_dir\": \"" + upload_dir + "\",\n"
                                   "  \"timestamp\": \"" + getCurrentTimestamp() + "\"\n"
@@ -706,10 +755,9 @@ void Client::handleFileUpload(const Location& loc) {
         response.setBody(success_body);
         response.setHeader("Content-Length", HttpUtils::toString(success_body.length()));
     } else {
-        prepareErrorResponse(500); // Internal Server Error - 파일 쓰기 실패
+        prepareErrorResponse(500);
     }
 }
-
 std::string Client::getCurrentTimestamp() const {
     time_t now = time(0);
     char buf[100];

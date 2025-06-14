@@ -165,6 +165,10 @@ void    ServerManager::acceptNewConnection(Server &serv)
 
     addToSet(client_sock, _recv_fd_pool);
 
+
+    Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Accepting connection on server: host=%s, port=%d, root=%s", 
+                  serv.getHost().c_str(), serv.getPort(), serv.getRootPath().c_str());
+    
     Client  new_client(client_sock);
     new_client.setServer(serv);
 
@@ -283,12 +287,12 @@ void    ServerManager::readRequest(const int &i, Client &c)
             
         case TO_CLIENT:
             if (!c.request.hasError()) {
-                c.findSetConfigs(_servers);
+                // c.findSetConfigs(_servers);
                 Logger::logMsg(DEBUG, CONSOLE_OUTPUT, "Request parsed successfully, moving fd %d to write set", i);
             } else {
                 Logger::logMsg(INFO, CONSOLE_OUTPUT, "Request has error %d, preparing error response", 
                               c.request.getErrorCode());
-                c.prepareErrorResponse(c.request.getErrorCode());
+                // c.prepareErrorResponse(c.request.getErrorCode());
             }
             removeFromSet(i, _recv_fd_pool);
             addToSet(i, _write_fd_pool);

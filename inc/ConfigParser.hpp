@@ -39,6 +39,7 @@ private:
     void validateBodySize(size_t size);
     void validateServerBlock(const Server& srv);
     void validateRootConfiguration(const Server& srv);
+    void validateServerCombinations(const std::vector<Server>&);
 
 public:
     /* Orthodox Canonical Form (OCF) */

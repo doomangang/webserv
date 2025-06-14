@@ -154,74 +154,107 @@ void CgiHandler::initEnvCgi(Request& req, const std::vector<Location>::iterator)
 
 
 /* initialization environment variable */
-void CgiHandler::initEnv(Request& req, const std::vector<Location>::iterator it_loc)
-{
-	int			poz;
-	std::string extension;
-	std::string ext_path;
+// CgiHandler.cpp - initEnv 메서드 수정
 
-	extension = this->_cgi_path.substr(this->_cgi_path.find("."));
-	
-	// 확장자만 추출하도록 수정
-	size_t dot_pos = this->_cgi_path.rfind('.');
-	if (dot_pos != std::string::npos) {
-		extension = this->_cgi_path.substr(dot_pos);
-	} else {
-		extension = "";
-	}
-	
-	std::cout << "[DEBUG] initEnv() - CGI path: " << this->_cgi_path << std::endl;
-	std::cout << "[DEBUG] initEnv() - Extension: " << extension << std::endl;
-	
-	// Location에서 CGI 경로 가져오기
-	if (extension == ".py") {
-		ext_path = "/opt/homebrew/bin/python3";
-	} else if (extension == ".sh") {
-		ext_path = "/bin/bash";
-	} else {
-		ext_path = "/usr/bin/php"; // 기본값
-	}
-	
-	std::cout << "[DEBUG] initEnv() - Interpreter path: " << ext_path << std::endl;
+void CgiHandler::initEnv(Request& req, const std::vector<Location>::iterator it_loc) {
+    int poz;
+    std::string extension;
+    std::string ext_path;
 
-	this->_env["AUTH_TYPE"] = "Basic";
-	this->_env["CONTENT_LENGTH"] = req.getHeaderValue("content-length");
-	this->_env["CONTENT_TYPE"] = req.getHeaderValue("content-type");
+    extension = this->_cgi_path.substr(this->_cgi_path.find("."));
+    
+    // 확장자만 추출하도록 수정
+    size_t dot_pos = this->_cgi_path.rfind('.');
+    if (dot_pos != std::string::npos) {
+        extension = this->_cgi_path.substr(dot_pos);
+    } else {
+        extension = "";
+    }
+    
+    std::cout << "[DEBUG] initEnv() - CGI path: " << this->_cgi_path << std::endl;
+    std::cout << "[DEBUG] initEnv() - Extension: " << extension << std::endl;
+    
+    // Location에서 CGI 경로 가져오기
+    if (extension == ".py") {
+        ext_path = "/usr/bin/python3";
+    } else if (extension == ".sh") {
+        ext_path = "/bin/bash";
+    } else {
+        ext_path = "/usr/bin/php"; // 기본값
+    }
+    
+    std::cout << "[DEBUG] initEnv() - Interpreter path: " << ext_path << std::endl;
+
+    this->_env["AUTH_TYPE"] = "Basic";
+    
+    // CONTENT_LENGTH와 CONTENT_TYPE 처리 개선
+    std::string content_length = req.getHeaderValue("content-length");
+    if (content_length.empty()) {
+        // GET 요청이나 Content-Length 헤더가 없는 경우 "0"으로 설정
+        this->_env["CONTENT_LENGTH"] = "0";
+        std::cout << "[DEBUG] CONTENT_LENGTH set to '0' (empty or missing header)" << std::endl;
+    } else {
+        this->_env["CONTENT_LENGTH"] = content_length;
+        std::cout << "[DEBUG] CONTENT_LENGTH set to '" << content_length << "'" << std::endl;
+    }
+    
+    std::string content_type = req.getHeaderValue("content-type");
+    if (content_type.empty()) {
+        // POST 요청인데 Content-Type이 없는 경우 기본값 설정
+        if (req.getMethod() == POST) {
+            this->_env["CONTENT_TYPE"] = "application/x-www-form-urlencoded";
+            std::cout << "[DEBUG] CONTENT_TYPE set to default for POST" << std::endl;
+        } else {
+            this->_env["CONTENT_TYPE"] = "";
+            std::cout << "[DEBUG] CONTENT_TYPE set to empty (GET request)" << std::endl;
+        }
+    } else {
+        this->_env["CONTENT_TYPE"] = content_type;
+        std::cout << "[DEBUG] CONTENT_TYPE set to '" << content_type << "'" << std::endl;
+    }
+    
     this->_env["GATEWAY_INTERFACE"] = "CGI/1.1";
-	poz = findStart(this->_cgi_path, "cgi-bin/");
-	this->_env["SCRIPT_NAME"] = this->_cgi_path;
-    this->_env["SCRIPT_FILENAME"] = ((poz < 0 || (size_t)(poz + 8) > this->_cgi_path.size()) ? "" : this->_cgi_path.substr(poz + 8, this->_cgi_path.size())); // check dif cases after put right parametr from the response
+    poz = findStart(this->_cgi_path, "cgi-bin/");
+    this->_env["SCRIPT_NAME"] = this->_cgi_path;
+    this->_env["SCRIPT_FILENAME"] = ((poz < 0 || (size_t)(poz + 8) > this->_cgi_path.size()) ? "" : this->_cgi_path.substr(poz + 8, this->_cgi_path.size()));
     this->_env["PATH_INFO"] = getPathInfo(req.getPath(), std::vector<std::string>(1, extension));
     this->_env["PATH_TRANSLATED"] = it_loc->getRootPath() + (this->_env["PATH_INFO"] == "" ? "/" : this->_env["PATH_INFO"]);
     this->_env["QUERY_STRING"] = decode(req.getQuery());
     this->_env["REMOTE_ADDR"] = req.getHeaderValue("host");
-	poz = findStart(req.getHeaderValue("host"), ":");
+    poz = findStart(req.getHeaderValue("host"), ":");
     this->_env["SERVER_NAME"] = (poz > 0 ? req.getHeaderValue("host").substr(0, poz) : "");
     this->_env["SERVER_PORT"] = (poz > 0 ? req.getHeaderValue("host").substr(poz + 1, req.getHeaderValue("host").size()) : "");
     this->_env["REQUEST_METHOD"] = req.getMethodStr();
     this->_env["HTTP_COOKIE"] = req.getHeaderValue("cookie");
     this->_env["DOCUMENT_ROOT"] = it_loc->getRootPath();
-	this->_env["REQUEST_URI"] = req.getPath() + req.getQuery();
+    this->_env["REQUEST_URI"] = req.getPath() + req.getQuery();
     this->_env["SERVER_PROTOCOL"] = "HTTP/1.1";
     this->_env["REDIRECT_STATUS"] = "200";
-	this->_env["SERVER_SOFTWARE"] = "AMANIX";
+    this->_env["SERVER_SOFTWARE"] = "AMANIX";
 
-	this->_ch_env = (char **)calloc(this->_env.size() + 1, sizeof(char *));
-	std::map<std::string, std::string>::const_iterator it = this->_env.begin();
-	for (int i = 0; it != this->_env.end(); it++, i++)
-	{
-		std::string tmp = it->first + "=" + it->second;
-		this->_ch_env[i] = strdup(tmp.c_str());
-	}
-	this->_argv = (char **)malloc(sizeof(char *) * 3);
-	this->_argv[0] = strdup(ext_path.c_str());
-	this->_argv[1] = strdup(this->_cgi_path.c_str());
-	this->_argv[2] = NULL;
-	
-	// Debug output
-	std::cout << "[DEBUG] initEnv() - Final argv[0]: " << this->_argv[0] << std::endl;
-	std::cout << "[DEBUG] initEnv() - Final argv[1]: " << this->_argv[1] << std::endl;
-	std::cout << "[DEBUG] initEnv() - Environment size: " << this->_env.size() << std::endl;
+    // 환경 변수 디버깅 출력
+    std::cout << "[DEBUG] CGI Environment Variables:" << std::endl;
+    std::cout << "[DEBUG]   REQUEST_METHOD=" << this->_env["REQUEST_METHOD"] << std::endl;
+    std::cout << "[DEBUG]   CONTENT_LENGTH=" << this->_env["CONTENT_LENGTH"] << std::endl;
+    std::cout << "[DEBUG]   CONTENT_TYPE=" << this->_env["CONTENT_TYPE"] << std::endl;
+    std::cout << "[DEBUG]   QUERY_STRING=" << this->_env["QUERY_STRING"] << std::endl;
+
+    this->_ch_env = (char **)calloc(this->_env.size() + 1, sizeof(char *));
+    std::map<std::string, std::string>::const_iterator it = this->_env.begin();
+    for (int i = 0; it != this->_env.end(); it++, i++)
+    {
+        std::string tmp = it->first + "=" + it->second;
+        this->_ch_env[i] = strdup(tmp.c_str());
+    }
+    this->_argv = (char **)malloc(sizeof(char *) * 3);
+    this->_argv[0] = strdup(ext_path.c_str());
+    this->_argv[1] = strdup(this->_cgi_path.c_str());
+    this->_argv[2] = NULL;
+    
+    // Debug output
+    std::cout << "[DEBUG] initEnv() - Final argv[0]: " << this->_argv[0] << std::endl;
+    std::cout << "[DEBUG] initEnv() - Final argv[1]: " << this->_argv[1] << std::endl;
+    std::cout << "[DEBUG] initEnv() - Environment size: " << this->_env.size() << std::endl;
 }
 
 /* Pipe and execute CGI */

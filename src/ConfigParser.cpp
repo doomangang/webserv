@@ -40,18 +40,41 @@ Config ConfigParser::parseConfigFile(const std::string& path, char* envp[]) {
         servers.push_back(srv);
     }
 
-    {
-        std::set<unsigned short> ports;
-        for (size_t i = 0; i < servers.size(); ++i) {
-            unsigned short p = servers[i].getPort();
-            if (!ports.insert(p).second) {
-                std::ostringstream oss; oss << p;
-                throw std::runtime_error("Duplicate listen port: " + oss.str());
+    validateServerCombinations(servers);
+    return Config(servers, envp);
+}
+
+void ConfigParser::validateServerCombinations(const std::vector<Server>& servers) {
+    for (size_t i = 0; i < servers.size(); ++i) {
+        for (size_t j = i + 1; j < servers.size(); ++j) {
+            const Server& srv1 = servers[i];
+            const Server& srv2 = servers[j];
+            
+            if (srv1.getHost() == srv2.getHost() && srv1.getPort() == srv2.getPort()) {
+                
+                const std::vector<std::string>& names1 = srv1.getServerNames();
+                const std::vector<std::string>& names2 = srv2.getServerNames();
+                
+                if (names1.empty() && names2.empty()) {
+                    throw std::runtime_error("Duplicate default server on " + srv1.getHost() + ":" + HttpUtils::toString(srv1.getPort()));
+                }
+                
+                for (size_t a = 0; a < names1.size(); ++a) {
+                    for (size_t b = 0; b < names2.size(); ++b) {
+                        if (names1[a] == names2[b]) {
+                            throw std::runtime_error("Duplicate server_name: " + names1[a] + " on " + srv1.getHost() + ":" + HttpUtils::toString(srv1.getPort()));
+                        }
+                    }
+                }
+                
+                std::cout << "[INFO] Virtual Hosting detected on " << srv1.getHost() << ":" << srv1.getPort() << std::endl;
+                std::string name1 = names1.empty() ? "(default)" : names1[0];
+                std::string name2 = names2.empty() ? "(default)" : names2[0];
+                std::cout << "[INFO]   - " << name1 << std::endl;
+                std::cout << "[INFO]   - " << name2 << std::endl;
             }
         }
     }
-
-    return Config(servers, envp);
 }
 
 // File reading and preprocessing 
@@ -133,11 +156,6 @@ std::string ConfigParser::preprocessConfig(std::string raw) {
     while (std::getline(iss, line)) {
         // Remove comments starting with '#'
         size_t pos = line.find('#');
-        if (pos != std::string::npos)
-            line.erase(pos);
-
-        // Remove comments starting with "//"
-        pos = line.find("//");
         if (pos != std::string::npos)
             line.erase(pos);
 
@@ -456,8 +474,16 @@ void ConfigParser::parseMethodsDirective(Location& loc, const std::string& stmt)
 }
 
 void ConfigParser::parseReturnDirective(Location& loc, const std::string& stmt) {
-    // "return 301 http://..."
+    std::cout << "[DEBUG] Original stmt: [" << stmt << "]" << std::endl;
+    std::cout << "[DEBUG] After substr(7): [" << stmt.substr(7) << "]" << std::endl;
+    
     std::vector<std::string> parts = HttpUtils::splitWords(stmt.substr(7));
+    
+    std::cout << "[DEBUG] Split parts:" << std::endl;
+    for (size_t i = 0; i < parts.size(); ++i) {
+        std::cout << "[DEBUG]   parts[" << i << "] = [" << parts[i] << "]" << std::endl;
+    }
+    
     if (parts.size() >= 2) {
         int code = std::atoi(parts[0].c_str());
         std::string url = parts[1];
@@ -465,6 +491,8 @@ void ConfigParser::parseReturnDirective(Location& loc, const std::string& stmt) 
             url += " ";
             url += parts[j];
         }
+        
+        std::cout << "[DEBUG] Final url: [" << url << "]" << std::endl;
         loc.setRedirect(code, url);
     }
 }

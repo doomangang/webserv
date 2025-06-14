@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect Test Server</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        .redirect-link { display: block; margin: 10px 0; padding: 10px; background: #f0f0f0; text-decoration: none; }
+        .redirect-link:hover { background: #e0e0e0; }
+        .code { background: #f5f5f5; padding: 2px 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Redirect Test Server</h1>
+    
+    <div class="section">
+        <h2>Test Redirects (Click to Test)</h2>
+        <a href="/old-page" class="redirect-link">
+            🔗 /old-page → /new-page (301 Permanent)
+        </a>
+        <a href="/temp" class="redirect-link">
+            🔗 /temp → /temporary-moved (302 Temporary)
+        </a>
+        <a href="/external" class="redirect-link">
+            🔗 /external → https://www.example.com/ (301 External)
+        </a>
+        <a href="/redirect-relative" class="redirect-link">
+            🔗 /redirect-relative → /target-page (302 Relative)
+        </a>
+        <a href="/search" class="redirect-link">
+            🔗 /search → /results?source=redirect (301 with Query)
+        </a>
+    </div>
+    
+    <div class="section">
+        <h2>Target Pages (Direct Access)</h2>
+        <a href="/new-page" class="redirect-link">📄 /new-page</a>
+        <a href="/temporary-moved" class="redirect-link">📄 /temporary-moved</a>
+        <a href="/target-page" class="redirect-link">📄 /target-page</a>
+        <a href="/results" class="redirect-link">📄 /results</a>
+    </div>
+    
+    <div class="section">
+        <h2>Test with curl</h2>
+        <pre>
+# Test redirects with curl
+curl -I http://127.0.0.1:8080/old-page           # Should return 301
+curl -I http://127.0.0.1:8080/temp               # Should return 302
+curl -L http://127.0.0.1:8080/old-page           # Follow redirect (-L flag)
+curl -w "%{redirect_url}\n" http://127.0.0.1:8080/old-page
+        </pre>
+    </div>
+</body>
+</html>

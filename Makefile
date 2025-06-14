@@ -14,7 +14,6 @@ SRCS    = main.cpp \
 		ServerManager.cpp \
 		Location.cpp \
 		HttpUtils.cpp \
-		Connection.cpp \
 		Request.cpp \
 		Response.cpp \
 		ResponseWriter.cpp \

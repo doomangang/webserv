@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Test Server</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .upload-form { margin: 10px 0; }
+        input[type="file"] { margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>📁 File Upload Test Server</h1>
+    
+    <div class="section">
+        <h2>Upload File (using curl)</h2>
+        <pre>
+# Upload a text file
+echo "Hello World!" > test.txt
+curl -X POST -T test.txt http://127.0.0.1:8080/uploads/test.txt
+
+# Upload binary file  
+curl -X POST -F "file=@image.jpg" http://127.0.0.1:8080/uploads/image.jpg
+
+# Upload with data
+curl -X POST -d "This is test data" http://127.0.0.1:8080/uploads/data.txt
+        </pre>
+    </div>
+    
+    <div class="section">
+        <h2>Browse Uploaded Files</h2>
+        <p><a href="/uploads/">📂 View uploads directory</a></p>
+        <p><a href="/files/">📂 View files directory</a></p>
+    </div>
+    
+    <div class="section">
+        <h2>Download Files</h2>
+        <pre>
+# Download uploaded file
+curl http://127.0.0.1:8080/uploads/test.txt
+
+# Download with save
+curl -O http://127.0.0.1:8080/uploads/test.txt
+        </pre>
+    </div>
+</body>
+</html>

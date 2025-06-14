@@ -39,7 +39,11 @@ char**      Config::getBaseEnv() const { return _base_env; }
 std::vector<Server> Config::getServers() const { return _servers; }
 
 const Server* Config::getMatchingServer(const std::string& host) const {
-    // Host 헤더로 서버 매칭
+    std::string hostname = host;
+    size_t colon_pos = hostname.find(':');
+    if (colon_pos != std::string::npos)
+        hostname = hostname.substr(0, colon_pos);
+        
     for (size_t i = 0; i < _servers.size(); ++i) {
         std::vector<std::string> names = _servers[i].getServerNames();
         for (size_t j = 0; j < names.size(); ++j) {

@@ -267,27 +267,26 @@ const Location& Server::getMatchingLocation(std::string& uri) const {
     return getDefaultLocation();
 }
 
-const Location& Server::getDefaultLocation() const {
-    static Location default_location;
-    if (default_location.getRootPath().empty() && !_root_path.empty()) {
-        default_location.setRootPath(_root_path);
+const Location& Server::getDefaultLocation() const{
+    if (_default_location.getRootPath().empty() && !_root_path.empty()) {
+        _default_location.setRootPath(_root_path);
         
         // 기본 메서드 설정
         std::set<Method> default_methods;
         default_methods.insert(GET);
         default_methods.insert(POST);
         default_methods.insert(DELETE);
-        default_location.setAllowMethods(default_methods);
+        _default_location.setAllowMethods(default_methods);
         
         // 기본 인덱스 파일 설정
         if (!_index_files.empty()) {
-            default_location.setIndexFiles(_index_files);
+            _default_location.setIndexFiles(_index_files);
         }
         
-        default_location.setAutoindex(_autoindex);
+        _default_location.setAutoindex(_autoindex);
     }
     
-    return default_location;
+    return _default_location;
 }
 
 // Getter

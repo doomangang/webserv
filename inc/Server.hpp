@@ -32,6 +32,7 @@ private:
     std::map<int, std::string>  _error_pages;
     Config*                     _config;
     std::vector<Location>       _locations;
+    mutable Location            _default_location;
     
 
 public:

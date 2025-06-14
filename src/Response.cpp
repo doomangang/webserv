@@ -37,25 +37,113 @@ void Response::clear() {
 	_cgi_obj.clear();
 }
 
+// Response.cpp - setErrorResponse 메서드 상세 디버깅
+
 void Response::setErrorResponse(short code, const Server& server) {
-	_code = code;
-	_status_description = HttpUtils::getStatusPhrase(code);
+    static int call_count = 0;
+    call_count++;
+    
+    std::cout << "[DEBUG] setErrorResponse called #" << call_count << " for error code: " << code << std::endl;
+    
+    _code = code;
+    _status_description = HttpUtils::getStatusPhrase(code);
 
-	setDefaultHeaders();
-	setHeader("Content-Type", "text/html");
+    setDefaultHeaders();
+    setHeader("Content-Type", "text/html");
 
-	std::string error_page_path = server.getErrorPage(code);
-	std::ifstream file(error_page_path.c_str());
-	if (file.is_open()) {
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		_body = buffer.str();
-	} else {
-		// Fallback error page
-		_body = "<html><head><title>" + HttpUtils::toString(code) + " " + _status_description + "</title></head>"
-			  + "<body><center><h1>" + HttpUtils::toString(code) + " " + _status_description + "</h1></center></body></html>";
-	}
-	setHeader("Content-Length", HttpUtils::toString(_body.length()));
+    std::string error_page_path = server.getErrorPage(code);
+    std::cout << "[DEBUG] Error page path from config: '" << error_page_path << "'" << std::endl;
+    std::cout << "[DEBUG] Server root path: '" << server.getRootPath() << "'" << std::endl;
+    
+    // 상대경로를 절대경로로 변환
+    std::string full_path = error_page_path;
+    if (!error_page_path.empty() && error_page_path[0] != '/') {
+        std::string root = server.getRootPath();
+        if (!root.empty()) {
+            if (root[root.length() - 1] == '/') {
+                root.erase(root.length() - 1);
+            }
+            full_path = root + "/" + error_page_path;
+        }
+    }
+    
+    std::cout << "[DEBUG] Full error page path: '" << full_path << "'" << std::endl;
+    
+    // 현재 작업 디렉토리 확인
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        std::cout << "[DEBUG] Current working directory: " << cwd << std::endl;
+    }
+    
+    // 파일 상태 상세 확인
+    struct stat file_stat;
+    int stat_result = stat(full_path.c_str(), &file_stat);
+    std::cout << "[DEBUG] stat() result: " << stat_result << std::endl;
+    
+    if (stat_result == 0) {
+        std::cout << "[DEBUG] File exists!" << std::endl;
+        std::cout << "[DEBUG] File size: " << file_stat.st_size << " bytes" << std::endl;
+        std::cout << "[DEBUG] Is regular file: " << (S_ISREG(file_stat.st_mode) ? "yes" : "no") << std::endl;
+        std::cout << "[DEBUG] File permissions: " << std::oct << (file_stat.st_mode & 0777) << std::dec << std::endl;
+    } else {
+        std::cout << "[DEBUG] File does not exist or stat failed. errno: " << errno << " (" << strerror(errno) << ")" << std::endl;
+        
+        // 부모 디렉토리들 확인
+        std::string parent_dir = full_path;
+        size_t last_slash = parent_dir.rfind('/');
+        if (last_slash != std::string::npos) {
+            parent_dir = parent_dir.substr(0, last_slash);
+            std::cout << "[DEBUG] Checking parent directory: '" << parent_dir << "'" << std::endl;
+            
+            struct stat dir_stat;
+            if (stat(parent_dir.c_str(), &dir_stat) == 0) {
+                std::cout << "[DEBUG] Parent directory exists and is " << (S_ISDIR(dir_stat.st_mode) ? "directory" : "not directory") << std::endl;
+            } else {
+                std::cout << "[DEBUG] Parent directory does not exist" << std::endl;
+            }
+        }
+    }
+    
+    // 파일 열기 시도 (더 상세한 에러 정보)
+    std::ifstream file(full_path.c_str());
+    if (file.is_open()) {
+        std::cout << "[DEBUG] File opened successfully!" << std::endl;
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        _body = buffer.str();
+        std::cout << "[DEBUG] Error page content length: " << _body.length() << std::endl;
+        if (_body.length() > 0) {
+            std::cout << "[DEBUG] Content preview: " << _body.substr(0, std::min((size_t)100, _body.length())) << "..." << std::endl;
+        }
+    } else {
+        std::cout << "[DEBUG] Failed to open file!" << std::endl;
+        std::cout << "[DEBUG] ifstream error flags - fail: " << file.fail() << ", bad: " << file.bad() << ", eof: " << file.eof() << std::endl;
+        
+        // 대안 경로들 시도
+        std::vector<std::string> alternative_paths;
+        alternative_paths.push_back("www/html/error_pages/405.html");
+        alternative_paths.push_back("./error_pages/405.html");
+        alternative_paths.push_back("error_pages/405.html");
+        
+        for (size_t i = 0; i < alternative_paths.size(); ++i) {
+            std::cout << "[DEBUG] Trying alternative path: '" << alternative_paths[i] << "'" << std::endl;
+            std::ifstream alt_file(alternative_paths[i].c_str());
+            if (alt_file.is_open()) {
+                std::cout << "[DEBUG] Alternative path works!" << std::endl;
+                std::stringstream buffer;
+                buffer << alt_file.rdbuf();
+                _body = buffer.str();
+                setHeader("Content-Length", HttpUtils::toString(_body.length()));
+                return;
+            }
+        }
+        
+        // Fallback error page
+        std::cout << "[DEBUG] Using fallback error page" << std::endl;
+        _body = "<html><head><title>" + HttpUtils::toString(code) + " " + _status_description + "</title></head>"
+              + "<body><center><h1>" + HttpUtils::toString(code) + " " + _status_description + "</h1></center></body></html>";
+    }
+    setHeader("Content-Length", HttpUtils::toString(_body.length()));
 }
 
 /**
